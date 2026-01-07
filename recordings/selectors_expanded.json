@@ -1,0 +1,429 @@
+{
+  "meta": {
+    "source": "New Backtest Modal HTML with all toggles expanded",
+    "date": "2026-01-07",
+    "notes": "Complete selector reference including all conditionally-revealed fields"
+  },
+
+  "conditional_fields": {
+    "use_gaps": {
+      "toggle_label": "Use Gaps",
+      "toggle_selector": "span:has-text('Use Gaps')",
+      "revealed_fields": {
+        "min_gap_up": "label:has-text('Min Gap Up') ~ div input",
+        "max_gap_up": "label:has-text('Max Gap Up') ~ div input",
+        "min_gap_down": "label:has-text('Min Gap Down') ~ div input",
+        "max_gap_down": "label:has-text('Max Gap Down') ~ div input"
+      }
+    },
+
+    "use_intraday_movement": {
+      "toggle_label": "Use Intraday Movement",
+      "toggle_selector": "span:has-text('Use Intraday Movement')",
+      "revealed_fields": {
+        "min_move_up": "label:has-text('Min Move Up') ~ div input",
+        "max_move_up": "label:has-text('Max Move Up') ~ div input",
+        "min_move_down": "label:has-text('Min Move Down') ~ div input",
+        "max_move_down": "label:has-text('Max Move Down') ~ div input"
+      }
+    },
+
+    "use_squeeze_metrics": {
+      "toggle_label": "Use SqueezeMetrics",
+      "toggle_selector": "span:has-text('Use SqueezeMetrics')",
+      "revealed_fields": {
+        "min_dix": "label:has-text('Min DIX') ~ div input",
+        "max_dix": "label:has-text('Max DIX') ~ div input",
+        "min_gex": "label:has-text('Min GEX') ~ div input",
+        "max_gex": "label:has-text('Max GEX') ~ div input",
+        "min_gxv": "label:has-text('Min GXV') ~ div input",
+        "max_gxv": "label:has-text('Max GXV') ~ div input"
+      }
+    },
+
+    "use_opening_range_breakout": {
+      "toggle_label": "Use Opening Range Breakout",
+      "toggle_selector": "span:has-text('Use Opening Range Breakout')",
+      "revealed_fields": {
+        "opening_range_end_time": "label:has-text('Opening Range End Time') ~ div input[type='time']",
+        "breakout_condition": "label:has-text('Breakout Condition') ~ select",
+        "use_high_low_values": "span:has-text('Use High-Low Values to Calculate Opening Range')"
+      },
+      "breakout_options": ["High and Low", "High-Only", "Low-Only"]
+    },
+
+    "use_leg_groups": {
+      "toggle_label": "Use Leg Groups",
+      "toggle_selector": "span:has-text('Use Leg Groups')",
+      "revealed_fields": {
+        "group_name": "label:has-text('Group Name') ~ div input",
+        "add_leg_group_btn": "button:has-text('Add Leg Group')"
+      },
+      "notes": "Creates separate P&L and exit conditions per leg group"
+    },
+
+    "use_profit_actions": {
+      "toggle_label": "Use Profit Actions",
+      "toggle_selector": "span:has-text('Use Profit Actions')",
+      "revealed_fields": {
+        "at_profit_target": "label:has-text('At Profit Target') ~ div input",
+        "close_allocation": "label:has-text('Close Allocation') ~ div input",
+        "adjust_stop_loss_to": "label:has-text('Adjust Stop Loss To') ~ div input",
+        "add_profit_action_btn": "button:has-text('Add Profit Action')"
+      }
+    },
+
+    "use_early_exit": {
+      "toggle_label": "Use Early Exit",
+      "toggle_selector": "span:has-text('Use Early Exit')",
+      "revealed_fields": {
+        "early_exit_type": "label:has-text('Early Exit Type') ~ div input",
+        "early_exit_type_select": "label:has-text('Early Exit Type') ~ div select",
+        "early_exit_time": "label:has-text('Early Exit Time') ~ input[type='time']"
+      },
+      "exit_type_options": ["DTE", "DIT", "MIT"]
+    },
+
+    "use_time_actions": {
+      "toggle_label": "Use Time Actions",
+      "toggle_selector": "span:has-text('Use Time Actions')",
+      "revealed_fields": {
+        "action_type": "label:has-text('Action Type') ~ div input",
+        "action_type_select": "label:has-text('Action Type') ~ div select",
+        "action_time": "label:has-text('Action Time') ~ input[type='time']",
+        "time_action_close_allocation": "label:has-text('Close Allocation') ~ div input",
+        "time_action_adjust_sl": "label:has-text('Adjust Stop Loss') ~ div input",
+        "time_action_adjust_pt": "label:has-text('Adjust Profit Target') ~ div input",
+        "add_time_action_btn": "button:has-text('Add Time Action')"
+      }
+    },
+
+    "use_vix_exit": {
+      "toggle_label": "Use VIX",
+      "toggle_selector": "h3:has-text('Exit Conditions') ~ div span:has-text('Use VIX')",
+      "section": "exit_conditions",
+      "revealed_fields": {
+        "exit_vix_moves_up": "label:has-text('Exit When VIX Moves Up') ~ div input",
+        "exit_vix_moves_down": "label:has-text('Exit When VIX Moves Down') ~ div input",
+        "exit_vix9d_moves_up": "label:has-text('Exit When VIX9D Moves Up') ~ div input",
+        "exit_vix9d_moves_down": "label:has-text('Exit When VIX9D Moves Down') ~ div input",
+        "exit_below_vix9d_vix_ratio": "label:has-text('Exit below VIX9D / VIX Ratio') ~ div input",
+        "exit_above_vix9d_vix_ratio": "label:has-text('Exit above VIX9D / VIX Ratio') ~ div input"
+      }
+    },
+
+    "use_technical_indicators_exit": {
+      "toggle_label": "Use Technical Indicators",
+      "toggle_selector": "h3:has-text('Exit Conditions') ~ div span:has-text('Use Technical Indicators')",
+      "section": "exit_conditions",
+      "revealed_fields": {
+        "exit_min_rsi": "h3:has-text('Exit Conditions') ~ div label:has-text('Min RSI') ~ div input",
+        "exit_max_rsi": "h3:has-text('Exit Conditions') ~ div label:has-text('Max RSI') ~ div input",
+        "sma_exit": "label:has-text('SMA Exit') ~ div button.selectInput",
+        "sma_exit_days": "label:has-text('SMA Exit') ~ div ~ div label:has-text('Days') ~ div button",
+        "ema_exit": "label:has-text('EMA Exit') ~ div button.selectInput",
+        "ema_exit_minutes": "label:has-text('EMA Exit') ~ div ~ div label:has-text('Minutes') ~ div button"
+      }
+    },
+
+    "use_underlying_price_movement_exit": {
+      "toggle_label": "Use Underlying Price Movement",
+      "toggle_selector": "h3:has-text('Exit Conditions') ~ div span:has-text('Use Underlying Price Movement')",
+      "section": "exit_conditions",
+      "revealed_fields": {
+        "exit_price_moves_up": "label:has-text('Exit When Underlying Price Moves Up') ~ div input",
+        "exit_price_moves_down": "label:has-text('Exit When Underlying Price Moves Down') ~ div input",
+        "exit_otm_short_put": "div:has-text('Exit When OTM Short Put is') input"
+      },
+      "notes": "OTM Short Put field has inline toggle"
+    },
+
+    "use_delta_exit": {
+      "toggle_label": "Use Delta",
+      "toggle_selector": "h3:has-text('Exit Conditions') ~ div span:has-text('Use Delta')",
+      "section": "exit_conditions",
+      "revealed_fields": {
+        "exit_below_position_delta": "label:has-text('Exit Below Position Delta') ~ div input",
+        "exit_above_position_delta": "label:has-text('Exit Above Position Delta') ~ div input",
+        "leg_selector": "label:has-text('Leg') ~ button.selectInput",
+        "exit_below_leg_delta": "label:has-text('Exit Below Leg Delta') ~ div input",
+        "exit_above_leg_delta": "label:has-text('Exit Above Leg Delta') ~ div input",
+        "add_leg_delta_exit_btn": "button:has-text('Add Leg Delta Exit')"
+      }
+    },
+
+    "use_short_long_ratio_exit": {
+      "toggle_label": "Use Short/Long Ratio",
+      "toggle_selector": "h3:has-text('Exit Conditions') ~ div span:has-text('Use Short/Long Ratio')",
+      "section": "exit_conditions",
+      "revealed_fields": {
+        "exit_sl_ratio_below": "label:has-text('Exit When S/L Ratio is Below') ~ div input",
+        "exit_sl_ratio_above": "label:has-text('Exit When S/L Ratio is Above') ~ div input",
+        "exit_sl_ratio_moves_down": "label:has-text('Exit When S/L Ratio Moves Down') ~ div input",
+        "exit_sl_ratio_moves_up": "label:has-text('Exit When S/L Ratio Moves Up') ~ div input"
+      }
+    }
+  },
+
+  "leg_groups_structure": {
+    "notes": "When Use Leg Groups is enabled, P&L and Exit Conditions sections appear per group",
+    "per_group_sections": {
+      "profit_loss": {
+        "heading": "h3:has-text('Profit & Loss')",
+        "profit_target": "label:has-text('Profit Target') ~ div input",
+        "stop_loss": "label:has-text('Stop Loss') ~ div input"
+      },
+      "exit_conditions": {
+        "heading": "h3:has-text('Exit Conditions')",
+        "notes": "Each leg group gets its own exit conditions toggles"
+      }
+    }
+  },
+
+  "strategy_leg_builder": {
+    "notes": "The leg builder in Strategy section",
+    "leg_row_pattern": "div.space-y-4 > div.flex.flex-wrap.gap-2.items-center",
+    "per_leg": {
+      "sell_buy": {
+        "sell_active": "button:has-text('Sell').bg-ooRed",
+        "sell_inactive": "button:has-text('Sell'):not(.bg-ooRed)",
+        "buy_active": "button:has-text('Buy').bg-ooGreen",
+        "buy_inactive": "button:has-text('Buy'):not(.bg-ooGreen)"
+      },
+      "call_put": {
+        "call_active": "button:has-text('Call').bg-ooRed, button:has-text('Call').bg-ooGreen",
+        "put_active": "button:has-text('Put').bg-ooRed, button:has-text('Put').bg-ooGreen"
+      },
+      "qty": {
+        "input": "input + div.append-label:has-text('QTY')",
+        "selector": "div.relative:has(div.append-label:has-text('QTY')) input"
+      },
+      "premium_or_delta": {
+        "input": "div.inline-flex input.bg-transparent.w-32",
+        "unit_selector": "div.inline-flex button.selectInput--nested span.truncate",
+        "units": ["$", "±", "%"]
+      },
+      "dte": {
+        "input": "input + div.append-label:has-text('DTE')",
+        "selector": "div.relative:has(div.append-label:has-text('DTE')) input"
+      },
+      "link_button": "button:has(svg path[d*='19.902 4.098'])",
+      "exact_strike_button": "button:has(svg path[d*='12 1.5a5.25'])",
+      "delete_button": "button:has(svg.text-ooRed path[d*='5.47 5.47'])"
+    },
+    "add_leg_button": "button:has-text('Add Leg')"
+  },
+
+  "complete_parameter_map": {
+    "dates": {
+      "start_date": "label:has-text('Start Date') ~ input.input",
+      "end_date": "label:has-text('End Date') ~ div input.input",
+      "presets": {
+        "ytd": "span.rounded-full:has-text('YTD')",
+        "last_30_days": "span.rounded-full:has-text('Last 30 days')",
+        "last_90_days": "span.rounded-full:has-text('Last 90 days')",
+        "last_year": "span.rounded-full:has-text('Last year')",
+        "last_2_years": "span.rounded-full:has-text('Last 2 years')",
+        "spx_dailies": "span.rounded-full:has-text('SPX Dailies')",
+        "covid_crash": "span.rounded-full:has-text('Covid Crash')"
+      }
+    },
+
+    "strategy": {
+      "ticker": "label:has-text('Ticker') ~ div button.selectInput",
+      "common_strategies": "label:has-text('Common Strategies') ~ div button.selectInput",
+      "pricing_mode": "button.selectInput:has(span:text-is('Fixed Premium')), button.selectInput:has(span:text-is('Delta'))",
+      "use_exact_dte": "span:has-text('Use Exact DTE')",
+      "round_strikes": "div:has-text('Round Strikes to Nearest') input"
+    },
+
+    "funds": {
+      "starting_funds": "label:has-text('Starting Funds') ~ div input",
+      "margin_allocation": "label:has-text('Margin Allocation % Per Trade') ~ div input",
+      "max_open_positions": "label:has-text('Max Open Positions') ~ div input",
+      "prune_oldest_trades": "span:has-text('Prune Oldest Trades')",
+      "max_contracts_per_trade": "label:has-text('Max Contracts Per Trade') ~ div input",
+      "ignore_margin_requirements": "span:has-text('Ignore Margin Requirements')",
+      "max_allocation_amount": "label:has-text('Max Allocation Amount Per Trade') ~ div input"
+    },
+
+    "entry_conditions": {
+      "entry_time": "label:has-text('Entry Time') ~ div input[type='time']",
+      "use_floating_entry_time": "span:has-text('Use Floating Entry Time')",
+      "add_entry_time": "button:has-text('Add Entry Time')",
+      "frequency": "label:has-text('Frequency') ~ div button.selectInput",
+      "use_vix": "h3:has-text('Entry Conditions') ~ div span:has-text('Use VIX')",
+      "use_technical_indicators": "h3:has-text('Entry Conditions') ~ div span:has-text('Use Technical Indicators')",
+      "min_rsi": "h3:has-text('Entry Conditions') ~ div label:has-text('Min RSI') ~ div input",
+      "max_rsi": "h3:has-text('Entry Conditions') ~ div label:has-text('Max RSI') ~ div input",
+      "sma_entry": "label:has-text('SMA Entry') ~ div button.selectInput",
+      "ema_entry": "label:has-text('EMA Entry') ~ div button.selectInput",
+      "ema_minutes_left": "label:has-text('EMA Entry') + div + div label:has-text('Minutes') ~ div button",
+      "ema_minutes_right": "label:has-text('EMA Entry') + div + div + div + div label:has-text('Minutes') ~ div button"
+    },
+
+    "profit_loss": {
+      "profit_target": "h3:has-text('Profit & Loss') ~ div label:has-text('Profit Target') ~ div input",
+      "profit_target_unit": "h3:has-text('Profit & Loss') ~ div label:has-text('Profit Target') ~ div button.selectInput--nested",
+      "stop_loss": "h3:has-text('Profit & Loss') ~ div label:has-text('Stop Loss') ~ div input",
+      "stop_loss_unit": "h3:has-text('Profit & Loss') ~ div label:has-text('Stop Loss') ~ div button.selectInput--nested",
+      "per_leg_stop_loss": "span:has-text('Per-Leg Stop Loss')",
+      "use_trailing_stop_loss": "div:has-text('Use Trailing Stop Loss')",
+      "use_0dte_intra_minute_stops": "span:has-text('Use 0-DTE Intra-Minute Stops')"
+    },
+
+    "misc": {
+      "use_commissions": "span:has-text('Use Commissions & Fees')",
+      "opening_commissions": "label:has-text('Per Contract Opening Commissions') ~ div input",
+      "closing_commissions": "label:has-text('Per Contract Closing Commissions') ~ div input",
+      "use_slippage": "span:has-text('Use Slippage')",
+      "entry_slippage": "label:has-text('Entry Slippage') ~ div input",
+      "exit_slippage": "label:has-text('Exit Slippage') ~ div input",
+      "stop_loss_slippage": "label:has-text('Stop Loss Slippage') ~ div input",
+      "ignore_wide_bid_ask": "span:has-text('Ignore Trades with Wide Bid-Ask Spread')",
+      "close_open_trades_on_completion": "span:has-text('Close Open Trades on Test Completion')",
+      "cap_non_opening_losses": "span:has-text('Cap Non-Opening Losses at Stop Loss')",
+      "require_two_consecutive_hits": "span:has-text('Require Two Consecutive Hits at Stop Loss')",
+      "use_min_max_entry_premium": "span:has-text('Use Min/Max Entry Premium')",
+      "use_entry_short_long_ratio": "span:has-text('Use Entry Short/Long Ratio')",
+      "use_blackout_days": "span:has-text('Use Blackout Days')",
+      "re_enter_trades": "span:has-text('Re-Enter Trades After Exit')",
+      "use_csv_custom_signals": "span:has-text('Use CSV Custom Signals File')"
+    }
+  },
+
+  "run_button": {
+    "selectors": [
+      "button:has-text('Run')",
+      "div.flex-shrink-0 button:has(span:has-text('Run'))"
+    ]
+  },
+
+  "results_page": {
+    "notes": "Selectors for extracting backtest results after run completes",
+
+    "page_header": {
+      "title": "div#message-heading span",
+      "new_backtest_button": "button:has-text('New Backtest')",
+      "save_button": "svg[class*='link'] + span.tooltip:has-text('Save')"
+    },
+
+    "test_config_summary": {
+      "underlying": "dt:has-text('Underlying') ~ dd",
+      "date_range": "dt:has-text('Dates') ~ dd",
+      "legs_table": "dt:has-text('Legs') ~ dd table",
+      "entry_conditions": "dt:has-text('Entry') ~ dd ul",
+      "exit_conditions": "dt:has-text('Exit') ~ dd ul",
+      "misc_settings": "dt:has-text('Misc') ~ dd ul"
+    },
+
+    "primary_metrics": {
+      "notes": "Main results row with P/L, CAGR, Max Drawdown, MAR, Win%",
+      "pl": {
+        "label": "dt:has-text('P/L')",
+        "value": "dt:has-text('P/L') ~ dd",
+        "selector": "div.bg-ooGreen:has(dt:has-text('P/L')) dd, div.bg-ooRed:has(dt:has-text('P/L')) dd"
+      },
+      "cagr": {
+        "label": "dt:has-text('CAGR')",
+        "value": "dt:has-text('CAGR') ~ dd",
+        "selector": "div:has(dt:has-text('CAGR')) dd"
+      },
+      "max_drawdown": {
+        "label": "dt:has-text('Max Drawdown')",
+        "value": "dt:has-text('Max Drawdown') ~ dd",
+        "selector": "div:has(dt:has-text('Max Drawdown')) dd"
+      },
+      "mar_ratio": {
+        "label": "dt:has-text('MAR Ratio')",
+        "value": "dt:has-text('MAR Ratio') ~ dd",
+        "selector": "div:has(dt:has-text('MAR Ratio')) dd"
+      },
+      "win_percentage": {
+        "label": "dt:has-text('Win Percentage')",
+        "value": "dt:has-text('Win Percentage') ~ dd",
+        "selector": "div:has(dt:has-text('Win Percentage')) dd"
+      }
+    },
+
+    "premium_metrics": {
+      "total_premium": {
+        "label": "dt:has-text('Total Premium')",
+        "value": "dt:has-text('Total Premium') ~ dd",
+        "selector": "div:has(dt:has-text('Total Premium')) dd"
+      },
+      "capture_rate": {
+        "label": "dt:has-text('Capture Rate')",
+        "value": "dt:has-text('Capture Rate') ~ dd",
+        "selector": "div:has(dt:has-text('Capture Rate')) dd"
+      }
+    },
+
+    "capital_metrics": {
+      "starting_capital": {
+        "label": "dt:has-text('Starting Capital')",
+        "value": "dt:has-text('Starting Capital') ~ dd",
+        "selector": "div:has(dt:has-text('Starting Capital')) dd"
+      },
+      "ending_capital": {
+        "label": "dt:has-text('Ending Capital')",
+        "value": "dt:has-text('Ending Capital') ~ dd",
+        "selector": "div:has(dt:has-text('Ending Capital')) dd"
+      }
+    },
+
+    "trade_metrics": {
+      "notes": "Second results row with per-trade statistics",
+      "avg_per_trade": {
+        "label": "dt:has-text('Avg Per Trade')",
+        "value": "dt:has-text('Avg Per Trade') ~ dd",
+        "selector": "div:has(dt:has-text('Avg Per Trade')) dd"
+      },
+      "avg_winner": {
+        "label": "dt:has-text('Avg Winner')",
+        "value": "dt:has-text('Avg Winner') ~ dd",
+        "selector": "div:has(dt:has-text('Avg Winner')) dd"
+      },
+      "avg_loser": {
+        "label": "dt:has-text('Avg Loser')",
+        "value": "dt:has-text('Avg Loser') ~ dd",
+        "selector": "div:has(dt:has-text('Avg Loser')) dd"
+      },
+      "max_winner": {
+        "label": "dt:has-text('Max Winner')",
+        "value": "dt:has-text('Max Winner') ~ dd",
+        "selector": "div:has(dt:has-text('Max Winner')) dd"
+      },
+      "max_loser": {
+        "label": "dt:has-text('Max Loser')",
+        "value": "dt:has-text('Max Loser') ~ dd",
+        "selector": "div:has(dt:has-text('Max Loser')) dd"
+      },
+      "avg_minutes_in_trade": {
+        "label": "dt:has-text('Avg Minutes In Trade')",
+        "value": "dt:has-text('Avg Minutes In Trade') ~ dd",
+        "selector": "div:has(dt:has-text('Avg Minutes In Trade')) dd"
+      }
+    },
+
+    "trade_counts": {
+      "total_trades": {
+        "label": "dt:has-text('Trades')",
+        "value": "dt:has-text('Trades') ~ dd",
+        "selector": "div:has(dt:text-is('Trades')) dd"
+      },
+      "winners": {
+        "label": "dt:has-text('Winners')",
+        "value": "dt:has-text('Winners') ~ dd",
+        "selector": "div:has(dt:has-text('Winners')) dd"
+      }
+    },
+
+    "result_indicators": {
+      "notes": "Color coding: bg-ooGreen = positive, bg-ooRed = negative",
+      "positive_indicator": ".bg-ooGreen",
+      "negative_indicator": ".bg-ooRed",
+      "neutral_indicator": ".bg-ooGray"
+    }
+  }
+}

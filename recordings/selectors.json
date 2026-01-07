@@ -1,0 +1,518 @@
+{
+  "meta": {
+    "extracted_from": "New Backtest Modal HTML",
+    "date": "2026-01-07",
+    "notes": "HeadlessUI IDs are dynamic (v-2-XXX changes). Use label-based or aria-based selectors instead."
+  },
+
+  "modal": {
+    "container": "[id^='headlessui-dialog']",
+    "close": "button:has-text('Cancel')",
+    "run": "button:has-text('Run')"
+  },
+
+  "sections": {
+    "dates": "h3:has-text('Dates')",
+    "strategy": "h3:has-text('Strategy')",
+    "funds": "h3:has-text('Funds & Allocation')",
+    "entry_conditions": "h3:has-text('Entry Conditions')",
+    "leg_groups": "h3:has-text('Leg Groups')",
+    "profit_loss": "h3:has-text('Profit & Loss')",
+    "exit_conditions": "h3:has-text('Exit Conditions')",
+    "misc": "h3:has-text('Misc')"
+  },
+
+  "parameters": {
+    "dates": {
+      "start_date": {
+        "label": "Start Date",
+        "selectors": [
+          "label:has-text('Start Date') ~ input",
+          "label.label:text-is('Start Date') + input.input"
+        ],
+        "type": "text",
+        "format": "MM/DD/YYYY"
+      },
+      "end_date": {
+        "label": "End Date",
+        "selectors": [
+          "label:has-text('End Date') ~ div input",
+          "label.label:text-is('End Date') + div input.input"
+        ],
+        "type": "text",
+        "format": "MM/DD/YYYY"
+      },
+      "date_presets": {
+        "type": "chips",
+        "selectors": ["span.rounded-full:has-text('YTD')", "span.rounded-full:has-text('Last 30 days')"]
+      }
+    },
+
+    "strategy": {
+      "ticker": {
+        "label": "Ticker",
+        "selectors": [
+          "label:has-text('Ticker') ~ div button.selectInput",
+          "[id^='headlessui-listbox-button']:has(span:text-is('SPX'))"
+        ],
+        "type": "dropdown",
+        "current_value_selector": "button.selectInput span.truncate"
+      },
+      "common_strategies": {
+        "label": "Common Strategies",
+        "selectors": ["label:has-text('Common Strategies') ~ div button.selectInput"],
+        "type": "dropdown"
+      },
+      "pricing_mode": {
+        "label": "Fixed Premium / Delta",
+        "selectors": ["button.selectInput:has(span:text-is('Fixed Premium'))"],
+        "type": "dropdown",
+        "options": ["Fixed Premium", "Delta"]
+      },
+      "leg_builder": {
+        "notes": "Complex leg builder with Sell/Buy, Call/Put buttons and inputs",
+        "sell_buy": {
+          "sell": "button:has-text('Sell').bg-ooRed, button:has-text('Sell'):not(.bg-ooRed)",
+          "buy": "button:has-text('Buy').bg-ooGreen, button:has-text('Buy'):not(.bg-ooGreen)"
+        },
+        "call_put": {
+          "call": "button:has-text('Call').bg-ooRed, button:has-text('Call').bg-ooGreen",
+          "put": "button:has-text('Put').bg-ooRed, button:has-text('Put').bg-ooGreen"
+        },
+        "qty": {
+          "selectors": ["input + div.append-label:has-text('QTY')"],
+          "type": "number"
+        },
+        "premium_or_delta": {
+          "notes": "Value input next to $ or ± dropdown",
+          "selectors": ["div.inline-flex input.bg-transparent"],
+          "type": "number"
+        },
+        "dte": {
+          "selectors": ["input + div.append-label:has-text('DTE')"],
+          "type": "number"
+        }
+      },
+      "use_exact_dte": {
+        "label": "Use Exact DTE",
+        "selectors": ["button[role='switch'][aria-labelledby*='label']:has(+ span:has-text('Use Exact DTE'))"],
+        "type": "toggle"
+      }
+    },
+
+    "funds": {
+      "starting_funds": {
+        "label": "Starting Funds",
+        "selectors": [
+          "label:has-text('Starting Funds') ~ div input",
+          "label.label:text-is('Starting Funds') + div input"
+        ],
+        "type": "number",
+        "suffix": "$"
+      },
+      "margin_allocation": {
+        "label": "Margin Allocation % Per Trade",
+        "selectors": ["label:has-text('Margin Allocation') ~ div input"],
+        "type": "number",
+        "suffix": "%"
+      },
+      "max_open_positions": {
+        "label": "Max Open Positions",
+        "selectors": ["label:has-text('Max Open Positions') ~ div input"],
+        "type": "number"
+      },
+      "max_contracts_per_trade": {
+        "label": "Max Contracts Per Trade",
+        "selectors": ["label:has-text('Max Contracts Per Trade') ~ div input"],
+        "type": "number"
+      },
+      "ignore_margin": {
+        "label": "Ignore Margin Requirements",
+        "selectors": ["span:has-text('Ignore Margin Requirements')"],
+        "type": "toggle",
+        "toggle_selector": "button[role='switch'][aria-checked]"
+      }
+    },
+
+    "entry_conditions": {
+      "entry_time": {
+        "label": "Entry Time",
+        "selectors": [
+          "label:has-text('Entry Time') ~ div input[type='time']",
+          "input[type='time'][step='60']"
+        ],
+        "type": "time",
+        "format": "HH:MM"
+      },
+      "floating_entry_time": {
+        "label": "Use Floating Entry Time",
+        "selectors": ["span:has-text('Use Floating Entry Time')"],
+        "type": "toggle"
+      },
+      "frequency": {
+        "label": "Frequency",
+        "selectors": ["label:has-text('Frequency') ~ div button.selectInput"],
+        "type": "dropdown",
+        "options": ["Daily", "Weekly", "Monthly"]
+      },
+      "use_vix": {
+        "label": "Use VIX",
+        "selectors": ["span:has-text('Use VIX')"],
+        "section": "entry_conditions",
+        "type": "toggle"
+      },
+      "use_technical_indicators": {
+        "label": "Use Technical Indicators",
+        "selectors": ["span#headlessui-label-v-2-129:has-text('Use Technical Indicators')"],
+        "type": "toggle"
+      },
+      "min_rsi": {
+        "label": "Min RSI",
+        "selectors": [
+          "label:has-text('Min RSI') ~ div input",
+          "label.label:text-is('Min RSI') + div input"
+        ],
+        "type": "number",
+        "requires_toggle": "use_technical_indicators"
+      },
+      "max_rsi": {
+        "label": "Max RSI",
+        "selectors": [
+          "label:has-text('Max RSI') ~ div input",
+          "label.label:text-is('Max RSI') + div input"
+        ],
+        "type": "number",
+        "requires_toggle": "use_technical_indicators"
+      },
+      "sma_entry": {
+        "label": "SMA Entry",
+        "selectors": ["label:has-text('SMA Entry') ~ div button.selectInput"],
+        "type": "dropdown"
+      },
+      "ema_entry": {
+        "label": "EMA Entry",
+        "selectors": ["label:has-text('EMA Entry') ~ div button.selectInput"],
+        "type": "dropdown"
+      },
+      "use_gaps": {
+        "label": "Use Gaps",
+        "selectors": ["span:has-text('Use Gaps')"],
+        "type": "toggle"
+      },
+      "use_intraday_movement": {
+        "label": "Use Intraday Movement",
+        "selectors": ["span:has-text('Use Intraday Movement')"],
+        "type": "toggle"
+      },
+      "use_squeeze_metrics": {
+        "label": "Use SqueezeMetrics",
+        "selectors": ["span:has-text('Use SqueezeMetrics')"],
+        "type": "toggle"
+      },
+      "use_opening_range_breakout": {
+        "label": "Use Opening Range Breakout",
+        "selectors": ["span:has-text('Use Opening Range Breakout')"],
+        "type": "toggle"
+      }
+    },
+
+    "leg_groups": {
+      "use_leg_groups": {
+        "label": "Use Leg Groups",
+        "selectors": ["span:has-text('Use Leg Groups')"],
+        "type": "toggle"
+      }
+    },
+
+    "profit_loss": {
+      "profit_target": {
+        "label": "Profit Target",
+        "selectors": [
+          "label:has-text('Profit Target') ~ div input",
+          "h3:has-text('Profit & Loss') ~ div label:has-text('Profit Target') ~ div input"
+        ],
+        "type": "number",
+        "has_unit_dropdown": true,
+        "unit_options": ["%", "$", "Closing Order"]
+      },
+      "stop_loss": {
+        "label": "Stop Loss",
+        "selectors": [
+          "label:has-text('Stop Loss') ~ div input",
+          "h3:has-text('Profit & Loss') ~ div label:has-text('Stop Loss') ~ div input"
+        ],
+        "type": "number",
+        "has_unit_dropdown": true,
+        "unit_options": ["%", "$", "Closing Order"]
+      },
+      "per_leg_stop_loss": {
+        "label": "Per-Leg Stop Loss",
+        "selectors": ["span:has-text('Per-Leg Stop Loss')"],
+        "type": "toggle"
+      },
+      "use_trailing_stop_loss": {
+        "label": "Use Trailing Stop Loss",
+        "selectors": ["div:has-text('Use Trailing Stop Loss')"],
+        "type": "toggle"
+      },
+      "use_profit_actions": {
+        "label": "Use Profit Actions",
+        "selectors": ["span:has-text('Use Profit Actions')"],
+        "type": "toggle"
+      }
+    },
+
+    "exit_conditions": {
+      "use_early_exit": {
+        "label": "Use Early Exit",
+        "selectors": ["span:has-text('Use Early Exit')"],
+        "type": "toggle",
+        "reveals": ["exit_time"]
+      },
+      "exit_time": {
+        "label": "Exit Time",
+        "selectors": ["input[type='time']"],
+        "type": "time",
+        "requires_toggle": "use_early_exit",
+        "notes": "Only visible when Use Early Exit is enabled"
+      },
+      "use_vix_exit": {
+        "label": "Use VIX",
+        "selectors": ["h3:has-text('Exit Conditions') ~ div span:has-text('Use VIX')"],
+        "section": "exit_conditions",
+        "type": "toggle"
+      },
+      "use_technical_indicators_exit": {
+        "label": "Use Technical Indicators",
+        "selectors": ["h3:has-text('Exit Conditions') ~ div span:has-text('Use Technical Indicators')"],
+        "section": "exit_conditions",
+        "type": "toggle"
+      },
+      "use_underlying_price_movement": {
+        "label": "Use Underlying Price Movement",
+        "selectors": ["span:has-text('Use Underlying Price Movement')"],
+        "type": "toggle",
+        "reveals": ["underlying_movement_inputs"]
+      },
+      "use_delta_exit": {
+        "label": "Use Delta",
+        "selectors": ["h3:has-text('Exit Conditions') ~ div span:has-text('Use Delta')"],
+        "type": "toggle"
+      },
+      "use_short_long_ratio": {
+        "label": "Use Short/Long Ratio",
+        "selectors": ["span:has-text('Use Short/Long Ratio')"],
+        "type": "toggle"
+      }
+    },
+
+    "misc": {
+      "use_commissions": {
+        "label": "Use Commissions & Fees",
+        "selectors": ["span:has-text('Use Commissions & Fees')"],
+        "type": "toggle"
+      },
+      "opening_commissions": {
+        "label": "Per Contract Opening Commissions & Fees",
+        "selectors": ["label:has-text('Opening Commissions') ~ div input"],
+        "type": "number",
+        "suffix": "$"
+      },
+      "closing_commissions": {
+        "label": "Per Contract Closing Commissions & Fees",
+        "selectors": ["label:has-text('Closing Commissions') ~ div input"],
+        "type": "number",
+        "suffix": "$"
+      },
+      "use_slippage": {
+        "label": "Use Slippage",
+        "selectors": ["span:has-text('Use Slippage')"],
+        "type": "toggle"
+      },
+      "entry_slippage": {
+        "label": "Entry Slippage",
+        "selectors": ["label:has-text('Entry Slippage') ~ div input"],
+        "type": "number",
+        "suffix": "$"
+      },
+      "exit_slippage": {
+        "label": "Exit Slippage",
+        "selectors": ["label:has-text('Exit Slippage') ~ div input"],
+        "type": "number",
+        "suffix": "$"
+      },
+      "stop_loss_slippage": {
+        "label": "Stop Loss Slippage",
+        "selectors": ["label:has-text('Stop Loss Slippage') ~ div input"],
+        "type": "number",
+        "suffix": "$"
+      },
+      "use_entry_short_long_ratio": {
+        "label": "Use Entry Short/Long Ratio",
+        "selectors": ["span:has-text('Use Entry Short/Long Ratio')"],
+        "type": "toggle"
+      },
+      "use_min_max_entry_premium": {
+        "label": "Use Min/Max Entry Premium",
+        "selectors": ["span:has-text('Use Min/Max Entry Premium')"],
+        "type": "toggle"
+      },
+      "use_blackout_days": {
+        "label": "Use Blackout Days",
+        "selectors": ["span:has-text('Use Blackout Days')"],
+        "type": "toggle"
+      },
+      "re_enter_trades": {
+        "label": "Re-Enter Trades After Exit",
+        "selectors": ["span:has-text('Re-Enter Trades After Exit')"],
+        "type": "toggle"
+      }
+    }
+  },
+
+  "toggle_pattern": {
+    "notes": "Toggles follow this pattern - find label text, then get sibling button",
+    "enabled_class": "bg-ooGreen",
+    "disabled_class": "bg-ooGray",
+    "checked_attribute": "aria-checked='true'",
+    "selector_template": "button[role='switch'][aria-checked]:has(+ span:has-text('{label}'))"
+  },
+
+  "conditional_sections": {
+    "notes": "These toggles reveal additional form fields when enabled. Must enable toggle before interacting with revealed fields.",
+
+    "use_technical_indicators": {
+      "toggle": "span:has-text('Use Technical Indicators')",
+      "reveals": [
+        {"name": "min_rsi", "selector": "label:has-text('Min RSI') ~ div input"},
+        {"name": "max_rsi", "selector": "label:has-text('Max RSI') ~ div input"},
+        {"name": "sma_entry", "selector": "label:has-text('SMA Entry') ~ div button"},
+        {"name": "ema_entry", "selector": "label:has-text('EMA Entry') ~ div button"}
+      ]
+    },
+
+    "use_vix": {
+      "toggle": "span:has-text('Use VIX')",
+      "reveals": [
+        {"name": "min_vix", "selector": "label:has-text('Min VIX') ~ div input"},
+        {"name": "max_vix", "selector": "label:has-text('Max VIX') ~ div input"}
+      ]
+    },
+
+    "use_early_exit": {
+      "toggle": "span:has-text('Use Early Exit')",
+      "reveals": [
+        {"name": "exit_time", "selector": "label:has-text('Exit Time') ~ div input[type='time']"}
+      ]
+    },
+
+    "use_leg_groups": {
+      "toggle": "span:has-text('Use Leg Groups')",
+      "reveals": [
+        {"name": "leg_group_config", "notes": "Reveals per-leg profit target and stop loss options"}
+      ]
+    },
+
+    "use_underlying_price_movement": {
+      "toggle": "span:has-text('Use Underlying Price Movement')",
+      "reveals": [
+        {"name": "movement_short_put", "selector": "Movement inputs for short put"},
+        {"name": "movement_short_call", "selector": "Movement inputs for short call"}
+      ]
+    },
+
+    "use_delta_exit": {
+      "toggle": "span:has-text('Use Delta')",
+      "section": "exit_conditions",
+      "reveals": [
+        {"name": "delta_exit_values", "notes": "Delta thresholds for exit"}
+      ]
+    },
+
+    "use_short_long_ratio": {
+      "toggle": "span:has-text('Use Short/Long Ratio')",
+      "reveals": [
+        {"name": "short_long_ratio_min", "selector": "Min ratio input"},
+        {"name": "short_long_ratio_max", "selector": "Max ratio input"}
+      ]
+    },
+
+    "use_gaps": {
+      "toggle": "span:has-text('Use Gaps')",
+      "reveals": [
+        {"name": "gap_up_min", "notes": "Gap up minimum %"},
+        {"name": "gap_up_max", "notes": "Gap up maximum %"},
+        {"name": "gap_down_min", "notes": "Gap down minimum %"},
+        {"name": "gap_down_max", "notes": "Gap down maximum %"}
+      ]
+    },
+
+    "use_intraday_movement": {
+      "toggle": "span:has-text('Use Intraday Movement')",
+      "reveals": [
+        {"name": "intraday_up_min", "notes": "Movement up minimum %"},
+        {"name": "intraday_up_max", "notes": "Movement up maximum %"},
+        {"name": "intraday_down_min", "notes": "Movement down minimum %"},
+        {"name": "intraday_down_max", "notes": "Movement down maximum %"}
+      ]
+    },
+
+    "use_entry_short_long_ratio": {
+      "toggle": "span:has-text('Use Entry Short/Long Ratio')",
+      "reveals": [
+        {"name": "entry_sl_ratio_min", "selector": "Min S/L ratio input"},
+        {"name": "entry_sl_ratio_max", "selector": "Max S/L ratio input"}
+      ]
+    },
+
+    "use_min_max_entry_premium": {
+      "toggle": "span:has-text('Use Min/Max Entry Premium')",
+      "reveals": [
+        {"name": "min_entry_premium", "selector": "Min premium input"},
+        {"name": "max_entry_premium", "selector": "Max premium input"}
+      ]
+    },
+
+    "use_trailing_stop_loss": {
+      "toggle": "div:has-text('Use Trailing Stop Loss')",
+      "reveals": [
+        {"name": "trailing_stop_activation", "notes": "Minimum profit before trailing starts"}
+      ]
+    },
+
+    "use_profit_actions": {
+      "toggle": "span:has-text('Use Profit Actions')",
+      "reveals": [
+        {"name": "profit_action_rules", "notes": "Take profit at X%, close Y% of position"}
+      ]
+    },
+
+    "per_leg_stop_loss": {
+      "toggle": "span:has-text('Per-Leg Stop Loss')",
+      "reveals": [
+        {"name": "per_leg_sl_values", "notes": "Individual stop loss per leg"}
+      ]
+    },
+
+    "re_enter_trades": {
+      "toggle": "span:has-text('Re-Enter Trades After Exit')",
+      "reveals": [
+        {"name": "reentry_conditions", "notes": "Conditions for trade re-entry"}
+      ]
+    }
+  },
+
+  "dropdown_pattern": {
+    "notes": "Dropdowns use HeadlessUI listbox pattern",
+    "trigger": "button.selectInput",
+    "current_value": "button.selectInput span.truncate",
+    "options_container": "[id^='headlessui-listbox-options']",
+    "option": "[id^='headlessui-listbox-option']"
+  },
+
+  "input_pattern": {
+    "notes": "Most inputs follow label + div + input pattern",
+    "selector_template": "label:has-text('{label}') ~ div input.input",
+    "with_suffix": "input + div.append-label:has-text('{suffix}')"
+  }
+}

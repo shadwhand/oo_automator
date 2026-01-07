@@ -1,0 +1,195 @@
+{
+  "title": "OptionOmega Backtest Flow",
+  "source": "Chrome DevTools Puppeteer Recording",
+  "extracted": "2026-01-07",
+  "notes": "Converted from Puppeteer format for Playwright compatibility",
+
+  "flow": {
+    "login": {
+      "steps": [
+        {
+          "action": "navigate",
+          "url": "https://optionomega.com/"
+        },
+        {
+          "action": "click",
+          "name": "sign_in_button",
+          "selectors": [
+            "span.btn-primary",
+            "text=Sign in",
+            "[aria-label*='Sign in']"
+          ]
+        },
+        {
+          "action": "fill",
+          "name": "email_input",
+          "selectors": [
+            "form div:nth-of-type(1) > input",
+            "input[type='email']",
+            "input[placeholder*='email']"
+          ]
+        },
+        {
+          "action": "fill",
+          "name": "password_input",
+          "selectors": [
+            "form div:nth-of-type(2) > input",
+            "input[type='password']"
+          ]
+        },
+        {
+          "action": "click",
+          "name": "login_submit",
+          "selectors": [
+            "form button[type='submit']",
+            "button:has-text('Sign in')",
+            "button:has-text('Log in')"
+          ]
+        }
+      ]
+    },
+
+    "select_test": {
+      "steps": [
+        {
+          "action": "click",
+          "name": "test_row",
+          "selectors": [
+            "table tbody tr td a",
+            "[role='link']"
+          ],
+          "notes": "Dynamic - will need to match by test name or URL"
+        }
+      ]
+    },
+
+    "new_backtest": {
+      "steps": [
+        {
+          "action": "click",
+          "name": "new_backtest_button",
+          "selectors": [
+            "div.mt-4 > button",
+            "button:has-text('New Backtest')",
+            "[aria-label='New Backtest']"
+          ]
+        },
+        {
+          "action": "wait",
+          "name": "modal_open",
+          "selectors": [
+            "[id^='headlessui-dialog']",
+            ".modal-dialog",
+            "[role='dialog']"
+          ]
+        }
+      ]
+    },
+
+    "parameter_inputs": {
+      "notes": "Parameter-specific selectors - these are examples from the recording",
+      "modal_base": "[id^='headlessui-dialog']",
+
+      "inputs": {
+        "delta_put": {
+          "selectors": [
+            "div:nth-of-type(4) div.pt-6 > div:nth-of-type(1) input",
+            "input[name*='delta'][name*='put']"
+          ]
+        },
+        "delta_call": {
+          "selectors": [
+            "div:nth-of-type(4) div.pt-6 > div:nth-of-type(2) input",
+            "input[name*='delta'][name*='call']"
+          ]
+        },
+        "profit_target": {
+          "selectors": [
+            "div:nth-of-type(6) div.pr-3 input",
+            "input[name*='profit']"
+          ]
+        },
+        "stop_loss": {
+          "selectors": [
+            "div:nth-of-type(6) div.pt-6 > div:nth-of-type(1) > div:nth-of-type(2) input",
+            "input[name*='stop']"
+          ]
+        }
+      }
+    },
+
+    "run_backtest": {
+      "steps": [
+        {
+          "action": "click",
+          "name": "run_button",
+          "selectors": [
+            "div.flex-shrink-0 span:has-text('Run')",
+            "button:has-text('Run')",
+            "[aria-label='Run']"
+          ]
+        },
+        {
+          "action": "wait",
+          "name": "modal_close",
+          "wait_for": "hidden",
+          "selectors": [
+            "[id^='headlessui-dialog']"
+          ]
+        },
+        {
+          "action": "wait",
+          "name": "results_ready",
+          "selectors": [
+            ".results-table",
+            "[data-results]",
+            "text=CAGR"
+          ],
+          "notes": "Wait for results to appear on page"
+        }
+      ]
+    },
+
+    "extract_results": {
+      "selectors": {
+        "cagr": "[data-metric='cagr']",
+        "max_drawdown": "[data-metric='drawdown']",
+        "win_percentage": "[data-metric='win-rate']",
+        "mar": "[data-metric='mar']",
+        "capture_rate": "[data-metric='capture']"
+      },
+      "notes": "These selectors need to be verified against actual UI"
+    },
+
+    "trade_log": {
+      "steps": [
+        {
+          "action": "click",
+          "name": "trade_log_tab",
+          "selectors": [
+            "text=Trade Log",
+            "[aria-label='Trade Log']",
+            "button:has-text('Trade')"
+          ]
+        },
+        {
+          "action": "click",
+          "name": "download_button",
+          "selectors": [
+            "text=Download",
+            "button:has-text('Export')",
+            "[aria-label*='download']"
+          ]
+        }
+      ]
+    }
+  },
+
+  "timing": {
+    "default_timeout": 5000,
+    "modal_animation": 300,
+    "after_parameter_set": 200,
+    "after_run_click": 1000,
+    "backtest_max_wait": 300000
+  }
+}
