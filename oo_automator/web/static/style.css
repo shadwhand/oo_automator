@@ -2,12 +2,14 @@
 :root {
     --bg-primary: #1a1a2e;
     --bg-secondary: #16213e;
+    --bg-tertiary: #0f3460;
     --text-primary: #eee;
     --text-secondary: #aaa;
     --accent: #4e9af1;
     --success: #4caf50;
     --error: #f44336;
     --warning: #ff9800;
+    --border-color: #333;
 }
 
 * {
@@ -26,7 +28,7 @@ body {
 header {
     background-color: var(--bg-secondary);
     padding: 1rem 2rem;
-    border-bottom: 1px solid #333;
+    border-bottom: 1px solid var(--border-color);
 }
 
 header nav a {
@@ -59,7 +61,7 @@ ul {
 
 li {
     padding: 0.75rem;
-    border-bottom: 1px solid #333;
+    border-bottom: 1px solid var(--border-color);
 }
 
 li:last-child {
@@ -68,9 +70,323 @@ li:last-child {
 
 a {
     color: var(--accent);
+    text-decoration: none;
 }
 
+a:hover {
+    text-decoration: underline;
+}
+
+/* Status badges */
 .status-pending { color: var(--text-secondary); }
 .status-running { color: var(--accent); }
 .status-completed { color: var(--success); }
 .status-failed { color: var(--error); }
+
+/* Buttons */
+.btn {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    text-decoration: none;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+}
+
+.btn-primary {
+    background-color: var(--accent);
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: #3d8ae0;
+    text-decoration: none;
+}
+
+/* Dashboard header */
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+/* Dashboard grid */
+.dashboard-grid {
+    display: grid;
+    gap: 1.5rem;
+}
+
+/* Tests list */
+.tests-list .test-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.test-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.test-name {
+    color: var(--text-primary);
+}
+
+.test-url {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-family: monospace;
+}
+
+.test-stats {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+/* Runs list */
+.runs-list .run-item {
+    padding: 0;
+}
+
+.runs-list .run-link {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    text-decoration: none;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.runs-list .run-link:hover {
+    background-color: var(--bg-tertiary);
+}
+
+.run-main {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.run-id {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.run-meta {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+/* Badge */
+.badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+/* Status badge */
+.status-badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+}
+
+.status-badge.status-pending {
+    background-color: #555;
+    color: var(--text-secondary);
+}
+
+.status-badge.status-running {
+    background-color: #1e4a8f;
+    color: var(--accent);
+}
+
+.status-badge.status-completed {
+    background-color: #1e5f20;
+    color: var(--success);
+}
+
+.status-badge.status-failed {
+    background-color: #5f1e1e;
+    color: var(--error);
+}
+
+/* Run header */
+.run-header {
+    margin-bottom: 2rem;
+}
+
+.back-link {
+    display: inline-block;
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+}
+
+/* Run details */
+.run-details {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.run-meta-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+}
+
+.meta-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.meta-item label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+}
+
+/* Progress bar */
+.progress-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.progress-section label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+}
+
+.progress-bar {
+    height: 8px;
+    background-color: var(--bg-tertiary);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background-color: var(--accent);
+    transition: width 0.3s ease;
+}
+
+.progress-text {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+/* Tables */
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+th {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    background-color: var(--bg-tertiary);
+}
+
+tbody tr:hover {
+    background-color: var(--bg-tertiary);
+}
+
+/* Tasks table */
+.tasks-table code.params {
+    font-size: 0.75rem;
+    background-color: var(--bg-tertiary);
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    display: inline-block;
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Results table */
+.results-table .positive {
+    color: var(--success);
+}
+
+.results-table .negative {
+    color: var(--error);
+}
+
+/* Summary text */
+.tasks-summary,
+.results-summary {
+    margin-top: 1rem;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+/* Empty state */
+.empty-state {
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+/* CLI example */
+.cli-example {
+    display: block;
+    margin-top: 0.5rem;
+    padding: 0.75rem;
+    background-color: var(--bg-tertiary);
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 0.875rem;
+}
+
+/* Loading state */
+.loading {
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    main {
+        padding: 1rem;
+    }
+
+    .dashboard-header {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: flex-start;
+    }
+
+    .run-meta-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    table {
+        font-size: 0.875rem;
+    }
+
+    th, td {
+        padding: 0.5rem;
+    }
+}

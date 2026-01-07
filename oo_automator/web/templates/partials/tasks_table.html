@@ -1,0 +1,27 @@
+{% if tasks %}
+<table class="tasks-table">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Status</th>
+            <th>Parameters</th>
+            <th>Attempts</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for task in tasks %}
+        <tr class="task-row status-{{ task.status }}">
+            <td>{{ task.id }}</td>
+            <td><span class="status-badge status-{{ task.status }}">{{ task.status }}</span></td>
+            <td><code class="params">{{ task.parameter_values }}</code></td>
+            <td>{{ task.attempts }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+<div class="tasks-summary">
+    Total: {{ tasks|length }} tasks
+</div>
+{% else %}
+<p class="empty-state">No tasks found.</p>
+{% endif %}

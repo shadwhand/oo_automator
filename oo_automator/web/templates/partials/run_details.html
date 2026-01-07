@@ -1,0 +1,34 @@
+<div class="run-details">
+    <div class="run-meta-grid">
+        <div class="meta-item">
+            <label>Mode</label>
+            <span class="badge">{{ run.mode }}</span>
+        </div>
+        <div class="meta-item">
+            <label>Status</label>
+            <span class="status-badge status-{{ run.status }}">{{ run.status }}</span>
+        </div>
+        <div class="meta-item">
+            <label>Created</label>
+            <span>{{ run.created_at.strftime('%Y-%m-%d %H:%M:%S') if run.created_at else 'N/A' }}</span>
+        </div>
+        <div class="meta-item">
+            <label>Started</label>
+            <span>{{ run.started_at.strftime('%Y-%m-%d %H:%M:%S') if run.started_at else 'Not started' }}</span>
+        </div>
+        <div class="meta-item">
+            <label>Completed</label>
+            <span>{{ run.completed_at.strftime('%Y-%m-%d %H:%M:%S') if run.completed_at else 'In progress' }}</span>
+        </div>
+    </div>
+
+    {% if progress is defined %}
+    <div class="progress-section">
+        <label>Progress</label>
+        <div class="progress-bar">
+            <div class="progress-fill" style="width: {{ progress.percentage }}%;"></div>
+        </div>
+        <span class="progress-text">{{ progress.completed }}/{{ progress.total }} tasks ({{ "%.1f"|format(progress.percentage) }}%)</span>
+    </div>
+    {% endif %}
+</div>

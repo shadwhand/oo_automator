@@ -1,0 +1,20 @@
+{% if runs %}
+<ul class="runs-list">
+    {% for run in runs %}
+    <li class="run-item">
+        <a href="/runs/{{ run.id }}" class="run-link">
+            <div class="run-main">
+                <span class="run-id">#{{ run.id }}</span>
+                <span class="run-mode badge">{{ run.mode }}</span>
+                <span class="run-status status-{{ run.status }}">{{ run.status }}</span>
+            </div>
+            <div class="run-meta">
+                <span class="run-date">{{ run.created_at.strftime('%Y-%m-%d %H:%M') if run.created_at else 'N/A' }}</span>
+            </div>
+        </a>
+    </li>
+    {% endfor %}
+</ul>
+{% else %}
+<p class="empty-state">No runs found.</p>
+{% endif %}

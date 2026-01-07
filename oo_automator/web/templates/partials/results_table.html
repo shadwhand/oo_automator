@@ -1,0 +1,45 @@
+{% if results %}
+<table class="results-table">
+    <thead>
+        <tr>
+            <th>Task ID</th>
+            <th>P/L</th>
+            <th>CAGR</th>
+            <th>Max DD</th>
+            <th>Win %</th>
+            <th>MAR</th>
+            <th>Trades</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for result in results %}
+        <tr class="result-row">
+            <td>{{ result.task_id }}</td>
+            <td class="{% if result.pl and result.pl > 0 %}positive{% elif result.pl and result.pl < 0 %}negative{% endif %}">
+                {% if result.pl is not none %}${{ "%.2f"|format(result.pl) }}{% else %}--{% endif %}
+            </td>
+            <td class="{% if result.cagr and result.cagr > 0 %}positive{% elif result.cagr and result.cagr < 0 %}negative{% endif %}">
+                {% if result.cagr is not none %}{{ "%.2f"|format(result.cagr) }}%{% else %}--{% endif %}
+            </td>
+            <td class="negative">
+                {% if result.max_drawdown is not none %}{{ "%.2f"|format(result.max_drawdown) }}%{% else %}--{% endif %}
+            </td>
+            <td>
+                {% if result.win_percentage is not none %}{{ "%.1f"|format(result.win_percentage) }}%{% else %}--{% endif %}
+            </td>
+            <td>
+                {% if result.mar is not none %}{{ "%.2f"|format(result.mar) }}{% else %}--{% endif %}
+            </td>
+            <td>
+                {% if result.total_trades is not none %}{{ result.total_trades }}{% else %}--{% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+<div class="results-summary">
+    Total: {{ results|length }} results
+</div>
+{% else %}
+<p class="empty-state">No results yet.</p>
+{% endif %}

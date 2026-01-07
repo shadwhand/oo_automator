@@ -3,30 +3,55 @@
 {% block title %}OO Automator - Dashboard{% endblock %}
 
 {% block content %}
-<h1>Dashboard</h1>
+<div class="dashboard-header">
+    <h1>Dashboard</h1>
+    <a href="#" class="btn btn-primary" onclick="alert('Run: oo-automator sweep &lt;test-url&gt; or oo-automator grid &lt;test-url&gt;'); return false;">
+        + New Run
+    </a>
+</div>
 
-<section>
-    <h2>Recent Tests</h2>
-    {% if tests %}
-    <ul>
-        {% for test in tests %}
-        <li>
-            <strong>{{ test.name or "(unnamed)" }}</strong>
-            <span>{{ test.url }}</span>
-            <span>Runs: {{ test.run_count }}</span>
-        </li>
-        {% endfor %}
-    </ul>
-    {% else %}
-    <p>No tests yet. Start a run using the CLI.</p>
-    {% endif %}
-</section>
+<div class="dashboard-grid">
+    <section class="tests-section">
+        <h2>Recent Tests</h2>
+        {% if tests %}
+        <ul class="tests-list">
+            {% for test in tests %}
+            <li class="test-item">
+                <div class="test-info">
+                    <strong class="test-name">{{ test.name or "(unnamed)" }}</strong>
+                    <span class="test-url">{{ test.url[:60] }}{% if test.url|length > 60 %}...{% endif %}</span>
+                </div>
+                <div class="test-stats">
+                    <span class="run-count">{{ test.run_count }} runs</span>
+                    {% if test.last_run_at %}
+                    <span class="last-run">Last: {{ test.last_run_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                    {% endif %}
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="empty-state">No tests yet. Start a run using the CLI:</p>
+        <code class="cli-example">oo-automator sweep &lt;test-url&gt;</code>
+        {% endif %}
+    </section>
 
-<section>
-    <h2>Active Runs</h2>
-    <div hx-get="/api/runs" hx-trigger="load" hx-target="#runs-list">
-        Loading...
-    </div>
-    <div id="runs-list"></div>
-</section>
+    <section class="runs-section">
+        <h2>Active Runs</h2>
+        <div hx-get="/api/runs?status=running"
+             hx-trigger="load, every 5s"
+             hx-headers='{"Accept": "text/html"}'>
+            <p class="loading">Loading active runs...</p>
+        </div>
+    </section>
+
+    <section class="runs-section">
+        <h2>Recent Runs</h2>
+        <div hx-get="/api/runs"
+             hx-trigger="load, every 10s"
+             hx-headers='{"Accept": "text/html"}'>
+            <p class="loading">Loading recent runs...</p>
+        </div>
+    </section>
+</div>
 {% endblock %}
