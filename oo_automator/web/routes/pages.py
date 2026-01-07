@@ -4,6 +4,8 @@ from fastapi.responses import HTMLResponse
 
 from ...db.connection import get_engine, get_session
 from ...db.queries import get_recent_tests
+from ...parameters import list_parameters
+from ...config import get_config
 from ..templates_config import get_templates
 
 router = APIRouter()
@@ -35,4 +37,21 @@ async def run_detail(request: Request, run_id: int):
         request,
         "run.html",
         {"run_id": run_id}
+    )
+
+
+@router.get("/new-run", response_class=HTMLResponse)
+async def new_run(request: Request):
+    """New run form page."""
+    templates = get_templates()
+    config = get_config()
+    parameters = list_parameters()
+
+    return templates.TemplateResponse(
+        request,
+        "new_run.html",
+        {
+            "parameters": parameters,
+            "config_email": config.email,
+        }
     )

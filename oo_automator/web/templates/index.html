@@ -5,9 +5,7 @@
 {% block content %}
 <div class="dashboard-header">
     <h1>Dashboard</h1>
-    <a href="#" class="btn btn-primary" onclick="alert('Run: oo-automator sweep &lt;test-url&gt; or oo-automator grid &lt;test-url&gt;'); return false;">
-        + New Run
-    </a>
+    <a href="/new-run" class="btn btn-primary">+ New Run</a>
 </div>
 
 <div class="dashboard-grid">
@@ -31,8 +29,7 @@
             {% endfor %}
         </ul>
         {% else %}
-        <p class="empty-state">No tests yet. Start a run using the CLI:</p>
-        <code class="cli-example">oo-automator sweep &lt;test-url&gt;</code>
+        <p class="empty-state">No tests yet. <a href="/new-run">Create your first run</a></p>
         {% endif %}
     </section>
 

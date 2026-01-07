@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block title %}New Run - OO Automator{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <a href="/" class="back-link">&larr; Back to Dashboard</a>
+    <h1>New Run</h1>
+</div>
+
+<form id="new-run-form" class="run-form">
+    <section class="form-section">
+        <h2>1. Test URL</h2>
+        <div class="form-group">
+            <label for="test-url">OptionOmega Test URL</label>
+            <input type="url" id="test-url" name="url"
+                   placeholder="https://app.optionomega.com/tests/..." required>
+        </div>
+        <div class="form-group">
+            <label for="test-name">Test Name (optional)</label>
+            <input type="text" id="test-name" name="name"
+                   placeholder="My Strategy Test">
+        </div>
+    </section>
+
+    <section class="form-section">
+        <h2>2. Test Mode</h2>
+        <div class="mode-options">
+            <label class="mode-option">
+                <input type="radio" name="mode" value="sweep" checked>
+                <div class="mode-card">
+                    <strong>Sweep</strong>
+                    <span>Test one parameter across a range</span>
+                </div>
+            </label>
+            <label class="mode-option">
+                <input type="radio" name="mode" value="grid">
+                <div class="mode-card">
+                    <strong>Grid Search</strong>
+                    <span>Test multiple parameters (all combinations)</span>
+                </div>
+            </label>
+        </div>
+    </section>
+
+    <section class="form-section">
+        <h2>3. Parameters</h2>
+        <div id="parameters-list">
+            {% for param in parameters %}
+            <div class="param-config" data-param="{{ param.name }}">
+                <label class="param-checkbox">
+                    <input type="checkbox" name="params" value="{{ param.name }}">
+                    <strong>{{ param.display_name }}</strong>
+                    <span class="param-desc">{{ param.description }}</span>
+                </label>
+                <div class="param-fields" style="display: none;">
+                    <div class="param-field">
+                        <label>Start</label>
+                        <input type="number" name="{{ param.name }}_start" value="5">
+                    </div>
+                    <div class="param-field">
+                        <label>End</label>
+                        <input type="number" name="{{ param.name }}_end" value="25">
+                    </div>
+                    <div class="param-field">
+                        <label>Step</label>
+                        <input type="number" name="{{ param.name }}_step" value="5">
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="form-section">
+        <h2>4. Credentials</h2>
+        <div class="form-group">
+            <label for="email">OptionOmega Email</label>
+            <input type="email" id="email" name="email" required
+                   value="{{ config_email or '' }}">
+        </div>
+        <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" required>
+        </div>
+    </section>
+
+    <section class="form-section">
+        <h2>5. Options</h2>
+        <div class="form-group">
+            <label for="browsers">Concurrent Browsers</label>
+            <select id="browsers" name="browsers">
+                <option value="1">1 browser</option>
+                <option value="2" selected>2 browsers</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label class="checkbox-label">
+                <input type="checkbox" name="headless" id="headless">
+                Run headless (no visible browser windows)
+            </label>
+        </div>
+    </section>
+
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary btn-large">
+            Start Run
+        </button>
+    </div>
+</form>
+
+<div id="run-status" style="display: none;">
+    <div class="status-card">
+        <h2>Run Started!</h2>
+        <p>Run ID: <span id="run-id"></span></p>
+        <p><a href="#" id="run-link">View Run Progress</a></p>
+    </div>
+</div>
+
+<script>
+// Show/hide parameter fields when checkbox is toggled
+document.querySelectorAll('.param-checkbox input').forEach(checkbox => {
+    checkbox.addEventListener('change', function() {
+        const fields = this.closest('.param-config').querySelector('.param-fields');
+        fields.style.display = this.checked ? 'flex' : 'none';
+    });
+});
+
+// Handle form submission
+document.getElementById('new-run-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const formData = new FormData(this);
+    const data = {
+        url: formData.get('url'),
+        name: formData.get('name') || null,
+        mode: formData.get('mode'),
+        email: formData.get('email'),
+        password: formData.get('password'),
+        browsers: parseInt(formData.get('browsers')),
+        headless: formData.get('headless') === 'on',
+        parameters: {}
+    };
+
+    // Collect selected parameters
+    formData.getAll('params').forEach(param => {
+        data.parameters[param] = {
+            start: parseInt(formData.get(param + '_start')),
+            end: parseInt(formData.get(param + '_end')),
+            step: parseInt(formData.get(param + '_step'))
+        };
+    });
+
+    if (Object.keys(data.parameters).length === 0) {
+        alert('Please select at least one parameter');
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/runs', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Failed to create run');
+        }
+
+        const result = await response.json();
+
+        // Show success message
+        document.getElementById('new-run-form').style.display = 'none';
+        document.getElementById('run-status').style.display = 'block';
+        document.getElementById('run-id').textContent = result.run_id;
+        document.getElementById('run-link').href = '/runs/' + result.run_id;
+
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+});
+</script>
+{% endblock %}

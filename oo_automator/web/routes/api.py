@@ -1,14 +1,29 @@
 """REST API endpoints with htmx partial support."""
 from typing import Optional
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, BackgroundTasks
 from fastapi.responses import HTMLResponse
+from pydantic import BaseModel
 from sqlmodel import select
 
-from ...db.connection import get_engine, get_session
+from ...db.connection import get_engine, get_session, init_db
 from ...db.models import Run, Task, Result
+from ...db.queries import get_or_create_test, create_run, create_tasks_for_run
+from ...core.run_manager import generate_combinations
 from ..templates_config import get_templates
 
 router = APIRouter()
+
+
+class NewRunRequest(BaseModel):
+    """Request body for creating a new run."""
+    url: str
+    name: Optional[str] = None
+    mode: str = "sweep"
+    email: str
+    password: str
+    browsers: int = 2
+    headless: bool = False
+    parameters: dict  # e.g. {"delta": {"start": 5, "end": 25, "step": 5}}
 
 
 def wants_html(request: Request) -> bool:
@@ -38,6 +53,79 @@ async def list_runs(request: Request, limit: int = 10, status: Optional[str] = N
             )
 
         return {"runs": [run.model_dump() for run in runs]}
+    finally:
+        session.close()
+
+
+@router.post("/runs")
+async def create_new_run(data: NewRunRequest):
+    """Create a new run with tasks."""
+    init_db()
+    engine = get_engine()
+    session = get_session(engine)
+
+    try:
+        # Create or get test
+        test = get_or_create_test(session, data.url, data.name)
+
+        # Build run config based on mode
+        if data.mode == "sweep":
+            # For sweep, use the first parameter
+            param_name = list(data.parameters.keys())[0]
+            param_config = data.parameters[param_name]
+
+            # Generate values
+            values = list(range(
+                param_config["start"],
+                param_config["end"] + 1,
+                param_config["step"]
+            ))
+
+            run_config = {
+                "mode": "sweep",
+                "parameter": param_name,
+                "values": values,
+                "param_config": param_config,
+                "browsers": data.browsers,
+                "headless": data.headless,
+            }
+        else:
+            # Grid mode - all parameters
+            parameters = {}
+            for param_name, param_config in data.parameters.items():
+                values = list(range(
+                    param_config["start"],
+                    param_config["end"] + 1,
+                    param_config["step"]
+                ))
+                parameters[param_name] = values
+
+            run_config = {
+                "mode": "grid",
+                "parameters": parameters,
+                "browsers": data.browsers,
+                "headless": data.headless,
+            }
+
+        # Create run in database
+        run = create_run(session, test.id, data.mode, run_config)
+
+        # Generate task combinations
+        combinations = generate_combinations(run_config)
+
+        # Create tasks
+        create_tasks_for_run(session, run.id, combinations)
+
+        return {
+            "run_id": run.id,
+            "test_id": test.id,
+            "total_tasks": len(combinations),
+            "status": "created",
+            "message": f"Run #{run.id} created with {len(combinations)} tasks"
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
     finally:
         session.close()
 
