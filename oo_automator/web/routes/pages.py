@@ -1,7 +1,6 @@
 """HTML page routes."""
-from fastapi import APIRouter, Request, Depends
+from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
-from sqlmodel import Session
 
 from ...db.connection import get_engine, get_session
 from ...db.queries import get_recent_tests
