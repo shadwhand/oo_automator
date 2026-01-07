@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block title %}Run #{{ run_id }}{% endblock %}
+
+{% block content %}
+<h1>Run #{{ run_id }}</h1>
+
+<div hx-get="/api/runs/{{ run_id }}" hx-trigger="load" hx-target="#run-details">
+    Loading run details...
+</div>
+<div id="run-details"></div>
+
+<h2>Tasks</h2>
+<div hx-get="/api/runs/{{ run_id }}/tasks" hx-trigger="load every 5s" hx-target="#tasks-list">
+    Loading tasks...
+</div>
+<div id="tasks-list"></div>
+{% endblock %}

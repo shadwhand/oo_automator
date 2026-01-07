@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}OO Automator - Dashboard{% endblock %}
+
+{% block content %}
+<h1>Dashboard</h1>
+
+<section>
+    <h2>Recent Tests</h2>
+    {% if tests %}
+    <ul>
+        {% for test in tests %}
+        <li>
+            <strong>{{ test.name or "(unnamed)" }}</strong>
+            <span>{{ test.url }}</span>
+            <span>Runs: {{ test.run_count }}</span>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p>No tests yet. Start a run using the CLI.</p>
+    {% endif %}
+</section>
+
+<section>
+    <h2>Active Runs</h2>
+    <div hx-get="/api/runs" hx-trigger="load" hx-target="#runs-list">
+        Loading...
+    </div>
+    <div id="runs-list"></div>
+</section>
+{% endblock %}

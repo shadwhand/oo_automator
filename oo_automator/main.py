@@ -26,8 +26,14 @@ def serve(
     host: str = typer.Option("127.0.0.1", "--host", help="Host to bind to"),
 ):
     """Start the dashboard server."""
+    import uvicorn
+    from .db.connection import init_db
+
+    # Initialize database
+    init_db()
+
     typer.echo(f"Starting dashboard at http://{host}:{port}")
-    # TODO: Implement server
+    uvicorn.run("oo_automator.web.app:app", host=host, port=port, reload=True)
 
 
 if __name__ == "__main__":
