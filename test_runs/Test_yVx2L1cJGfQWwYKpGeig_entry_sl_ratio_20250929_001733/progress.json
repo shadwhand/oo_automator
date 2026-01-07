@@ -1,0 +1,44 @@
+{
+  "config": {
+    "test_url": "https://optionomega.com/test/yVx2L1cJGfQWwYKpGeig",
+    "parameter_type": "entry_sl_ratio",
+    "delay_seconds": 1,
+    "backtest_timeout": 300,
+    "max_workers": 2,
+    "chrome_path": null,
+    "debug": true,
+    "sl_ratio_include_empty": false,
+    "sl_ratio_start": 0.0,
+    "sl_ratio_end": 0.5,
+    "sl_ratio_step": 0.05,
+    "test_run_dir": "test_runs/Test_yVx2L1cJGfQWwYKpGeig_entry_sl_ratio_20250929_001733"
+  },
+  "completion_percentage": 18.181818181818183,
+  "total_tests": 11,
+  "completed_tests": 2,
+  "timestamp": "2025-09-29T00:19:39.315625",
+  "results": [
+    {
+      "cagr": 0.28,
+      "maxDrawdown": -0.068,
+      "winPercentage": 0.696,
+      "captureRate": 0.076,
+      "mar": 4.11764705882353,
+      "parameter_type": "entry_sl_ratio",
+      "parameter_value": 0.0,
+      "timestamp": "2025-09-29T00:18:35.534654",
+      "worker_id": 0
+    },
+    {
+      "cagr": 0.28,
+      "maxDrawdown": -0.068,
+      "winPercentage": 0.696,
+      "captureRate": 0.076,
+      "mar": 4.11764705882353,
+      "parameter_type": "entry_sl_ratio",
+      "parameter_value": 0.05,
+      "timestamp": "2025-09-29T00:19:02.993551",
+      "worker_id": 1
+    }
+  ]
+}

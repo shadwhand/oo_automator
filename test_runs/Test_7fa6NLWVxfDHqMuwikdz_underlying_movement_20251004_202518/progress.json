@@ -1,0 +1,20 @@
+{
+  "config": {
+    "test_url": "https://optionomega.com/test/7fa6NLWVxfDHqMuwikdz",
+    "parameter_type": "underlying_movement",
+    "delay_seconds": 1,
+    "backtest_timeout": 300,
+    "max_workers": 2,
+    "chrome_path": null,
+    "debug": false,
+    "underlying_movement_leg_option": "both",
+    "movement_start": -10.0,
+    "movement_end": -40.0,
+    "movement_step": -0.5
+  },
+  "completion_percentage": 0.0,
+  "total_tests": 61,
+  "completed_tests": 0,
+  "timestamp": "2025-10-04T20:28:31.077486",
+  "results": []
+}

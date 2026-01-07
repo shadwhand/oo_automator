@@ -1,0 +1,109 @@
+{
+  "config": {
+    "test_url": "https://optionomega.com/test/Z8ZacdTQKiz7YiyCRn1u",
+    "parameter_type": "entry_time",
+    "delay_seconds": 1,
+    "backtest_timeout": 300,
+    "max_workers": 2,
+    "chrome_path": null,
+    "debug": false,
+    "start_time": "9:32",
+    "end_time": "15:59",
+    "interval_minutes": 1,
+    "test_run_dir": "test_runs/Test_Z8ZacdTQKiz7YiyCRn1u_entry_time_20250929_061931"
+  },
+  "completion_percentage": 2.0618556701030926,
+  "total_tests": 388,
+  "completed_tests": 8,
+  "timestamp": "2025-09-29T06:22:37.230172",
+  "results": [
+    {
+      "cagr": 0.011000000000000001,
+      "maxDrawdown": -0.5,
+      "winPercentage": 0.688,
+      "captureRate": 0.11800000000000001,
+      "mar": 2.2,
+      "parameter_type": "entry_time",
+      "parameter_value": "09:32",
+      "timestamp": "2025-09-29T06:20:19.446969",
+      "worker_id": 0
+    },
+    {
+      "cagr": 0.6,
+      "maxDrawdown": -1.0,
+      "winPercentage": 0.688,
+      "captureRate": 0.069,
+      "mar": 0.6,
+      "parameter_type": "entry_time",
+      "parameter_value": "09:33",
+      "timestamp": "2025-09-29T06:20:38.006558",
+      "worker_id": 1
+    },
+    {
+      "cagr": 0.8,
+      "maxDrawdown": -0.012,
+      "winPercentage": 0.688,
+      "captureRate": 0.087,
+      "mar": 0.6666666666666667,
+      "parameter_type": "entry_time",
+      "parameter_value": "09:34",
+      "timestamp": "2025-09-29T06:20:56.131205",
+      "worker_id": 0
+    },
+    {
+      "cagr": 0.3,
+      "maxDrawdown": -0.013000000000000001,
+      "winPercentage": 0.672,
+      "captureRate": 0.036000000000000004,
+      "mar": 0.23076923076923075,
+      "parameter_type": "entry_time",
+      "parameter_value": "09:35",
+      "timestamp": "2025-09-29T06:21:14.301176",
+      "worker_id": 1
+    },
+    {
+      "cagr": -0.3,
+      "maxDrawdown": -0.013000000000000001,
+      "winPercentage": 0.6409999999999999,
+      "captureRate": 0,
+      "mar": 0.23076923076923075,
+      "parameter_type": "entry_time",
+      "parameter_value": "09:36",
+      "timestamp": "2025-09-29T06:21:32.501766",
+      "worker_id": 0
+    },
+    {
+      "cagr": -0.3,
+      "maxDrawdown": -0.013000000000000001,
+      "winPercentage": 0.6409999999999999,
+      "captureRate": 0,
+      "mar": 0.23076923076923075,
+      "parameter_type": "entry_time",
+      "parameter_value": "09:37",
+      "timestamp": "2025-09-29T06:21:50.715277",
+      "worker_id": 1
+    },
+    {
+      "cagr": -0.4,
+      "maxDrawdown": -0.011000000000000001,
+      "winPercentage": 0.6559999999999999,
+      "captureRate": 0,
+      "mar": 0.36363636363636365,
+      "parameter_type": "entry_time",
+      "parameter_value": "09:38",
+      "timestamp": "2025-09-29T06:22:08.905056",
+      "worker_id": 0
+    },
+    {
+      "cagr": 0.0,
+      "maxDrawdown": -0.9,
+      "winPercentage": 0.6559999999999999,
+      "captureRate": 0.1,
+      "mar": 0.0,
+      "parameter_type": "entry_time",
+      "parameter_value": "09:39",
+      "timestamp": "2025-09-29T06:22:27.127018",
+      "worker_id": 1
+    }
+  ]
+}

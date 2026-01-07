@@ -1,0 +1,251 @@
+{
+  "config": {
+    "test_url": "https://optionomega.com/test/TJTPtpISdHmxVbnxcdDs",
+    "parameter_type": "entry_time",
+    "delay_seconds": 1,
+    "backtest_timeout": 300,
+    "max_workers": 2,
+    "chrome_path": null,
+    "debug": false,
+    "start_time": "9:32",
+    "end_time": "15:59",
+    "interval_minutes": 1
+  },
+  "completion_percentage": 5.412371134020619,
+  "total_tests": 388,
+  "completed_tests": 21,
+  "timestamp": "2025-10-06T19:26:51.393280",
+  "results": [
+    {
+      "cagr": 1.8,
+      "maxDrawdown": -1.3,
+      "winPercentage": 67.9,
+      "captureRate": 3.7,
+      "mar": 1.3846153846153846,
+      "parameter_type": "entry_time",
+      "parameter_value": "09:32",
+      "timestamp": "2025-10-06T19:20:13.714588",
+      "worker_id": 0
+    },
+    {
+      "cagr": 0.5,
+      "maxDrawdown": -1.5,
+      "winPercentage": 66.7,
+      "captureRate": 1.0,
+      "mar": 0.3333333333333333,
+      "parameter_type": "entry_time",
+      "parameter_value": "09:33",
+      "timestamp": "2025-10-06T19:20:25.528225",
+      "worker_id": 1
+    },
+    {
+      "cagr": 1.2,
+      "maxDrawdown": -1.5,
+      "winPercentage": 66.7,
+      "captureRate": 2.6,
+      "mar": 0.7999999999999999,
+      "parameter_type": "entry_time",
+      "parameter_value": "09:34",
+      "timestamp": "2025-10-06T19:20:46.400537",
+      "worker_id": 0
+    },
+    {
+      "cagr": 1.6,
+      "maxDrawdown": -1.5,
+      "winPercentage": 67.2,
+      "captureRate": 3.3,
+      "mar": 1.0666666666666667,
+      "parameter_type": "entry_time",
+      "parameter_value": "09:35",
+      "timestamp": "2025-10-06T19:20:57.986768",
+      "worker_id": 1
+    },
+    {
+      "cagr": 3.2,
+      "maxDrawdown": -1.2,
+      "winPercentage": 67.9,
+      "captureRate": 6.7,
+      "mar": 2.666666666666667,
+      "parameter_type": "entry_time",
+      "parameter_value": "09:36",
+      "timestamp": "2025-10-06T19:21:05.584616",
+      "worker_id": 0
+    },
+    {
+      "cagr": -0.9,
+      "maxDrawdown": -1.7,
+      "winPercentage": 64.9,
+      "captureRate": 0.0,
+      "mar": 0.5294117647058824,
+      "parameter_type": "entry_time",
+      "parameter_value": "09:37",
+      "timestamp": "2025-10-06T19:21:40.463642",
+      "worker_id": 1
+    },
+    {
+      "cagr": -0.0,
+      "maxDrawdown": -1.8,
+      "winPercentage": 66.0,
+      "captureRate": 0.0,
+      "mar": 0.0,
+      "parameter_type": "entry_time",
+      "parameter_value": "09:38",
+      "timestamp": "2025-10-06T19:21:48.119457",
+      "worker_id": 0
+    },
+    {
+      "cagr": 0.8,
+      "maxDrawdown": -1.7,
+      "winPercentage": 66.3,
+      "captureRate": 1.7,
+      "mar": 0.4705882352941177,
+      "parameter_type": "entry_time",
+      "parameter_value": "09:40",
+      "timestamp": "2025-10-06T19:22:25.670576",
+      "worker_id": 0
+    },
+    {
+      "cagr": -2.1,
+      "maxDrawdown": -2.0,
+      "winPercentage": 64.7,
+      "captureRate": 0.0,
+      "mar": 1.05,
+      "parameter_type": "entry_time",
+      "parameter_value": "09:39",
+      "timestamp": "2025-10-06T19:22:28.249224",
+      "worker_id": 1
+    },
+    {
+      "cagr": -1.2,
+      "maxDrawdown": -2.0,
+      "winPercentage": 65.1,
+      "captureRate": 0.0,
+      "mar": 0.6,
+      "parameter_type": "entry_time",
+      "parameter_value": "09:41",
+      "timestamp": "2025-10-06T19:23:08.219322",
+      "worker_id": 0
+    },
+    {
+      "cagr": -0.2,
+      "maxDrawdown": -1.9,
+      "winPercentage": 65.6,
+      "captureRate": 0.0,
+      "mar": 0.10526315789473685,
+      "parameter_type": "entry_time",
+      "parameter_value": "09:42",
+      "timestamp": "2025-10-06T19:23:16.221464",
+      "worker_id": 1
+    },
+    {
+      "cagr": -2.3,
+      "maxDrawdown": -2.6,
+      "winPercentage": 64.2,
+      "captureRate": 0.0,
+      "mar": 0.8846153846153845,
+      "parameter_type": "entry_time",
+      "parameter_value": "09:43",
+      "timestamp": "2025-10-06T19:23:55.474258",
+      "worker_id": 0
+    },
+    {
+      "cagr": -2.6,
+      "maxDrawdown": -2.2,
+      "winPercentage": 64.2,
+      "captureRate": 0.0,
+      "mar": 1.1818181818181817,
+      "parameter_type": "entry_time",
+      "parameter_value": "09:44",
+      "timestamp": "2025-10-06T19:24:04.174093",
+      "worker_id": 1
+    },
+    {
+      "cagr": -4.5,
+      "maxDrawdown": -2.6,
+      "winPercentage": 62.2,
+      "captureRate": 0.0,
+      "mar": 1.7307692307692306,
+      "parameter_type": "entry_time",
+      "parameter_value": "09:45",
+      "timestamp": "2025-10-06T19:24:30.520347",
+      "worker_id": 0
+    },
+    {
+      "cagr": -2.8,
+      "maxDrawdown": -2.0,
+      "winPercentage": 63.7,
+      "captureRate": 0.0,
+      "mar": 1.4,
+      "parameter_type": "entry_time",
+      "parameter_value": "09:46",
+      "timestamp": "2025-10-06T19:24:52.026689",
+      "worker_id": 1
+    },
+    {
+      "cagr": -4.8,
+      "maxDrawdown": -2.7,
+      "winPercentage": 62.5,
+      "captureRate": 0.0,
+      "mar": 1.7777777777777777,
+      "parameter_type": "entry_time",
+      "parameter_value": "09:47",
+      "timestamp": "2025-10-06T19:25:18.246814",
+      "worker_id": 0
+    },
+    {
+      "cagr": -3.1,
+      "maxDrawdown": -2.5,
+      "winPercentage": 63.4,
+      "captureRate": 0.0,
+      "mar": 1.24,
+      "parameter_type": "entry_time",
+      "parameter_value": "09:48",
+      "timestamp": "2025-10-06T19:25:24.963674",
+      "worker_id": 1
+    },
+    {
+      "cagr": 2.0,
+      "maxDrawdown": -2.0,
+      "winPercentage": 67.2,
+      "captureRate": 4.2,
+      "mar": 1.0,
+      "parameter_type": "entry_time",
+      "parameter_value": "09:50",
+      "timestamp": "2025-10-06T19:25:48.372613",
+      "worker_id": 1
+    },
+    {
+      "cagr": -2.2,
+      "maxDrawdown": -2.1,
+      "winPercentage": 64.9,
+      "captureRate": 0.0,
+      "mar": 1.0476190476190477,
+      "parameter_type": "entry_time",
+      "parameter_value": "09:49",
+      "timestamp": "2025-10-06T19:26:05.655859",
+      "worker_id": 0
+    },
+    {
+      "cagr": 0.3,
+      "maxDrawdown": -1.8,
+      "winPercentage": 65.6,
+      "captureRate": 0.6,
+      "mar": 0.16666666666666666,
+      "parameter_type": "entry_time",
+      "parameter_value": "09:51",
+      "timestamp": "2025-10-06T19:26:20.632613",
+      "worker_id": 1
+    },
+    {
+      "cagr": 2.3,
+      "maxDrawdown": -1.3,
+      "winPercentage": 67.0,
+      "captureRate": 4.9,
+      "mar": 1.769230769230769,
+      "parameter_type": "entry_time",
+      "parameter_value": "09:52",
+      "timestamp": "2025-10-06T19:26:43.095094",
+      "worker_id": 0
+    }
+  ]
+}

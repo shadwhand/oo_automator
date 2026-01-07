@@ -1,0 +1,17 @@
+{
+  "best_entry_times": [
+    "10:01",
+    "10:05",
+    "10:07"
+  ],
+  "entry_time_stats": {
+    "avg_mar": 1.0582777600819968,
+    "avg_win_rate": 0.7049672805605557,
+    "avg_sharpe": 0.03552075376752208
+  },
+  "best_days": [
+    "Friday",
+    "Monday"
+  ],
+  "day_performance": {
+    

@@ -1,16 +1,14 @@
 # oo_automator/cli/run.py
 """Interactive run command for OO Automator."""
-import asyncio
-from pathlib import Path
 from typing import Optional
 
 import typer
 from rich.console import Console
 from rich.prompt import Prompt, IntPrompt, Confirm
-from rich.table import Table
 from rich.panel import Panel
+from sqlmodel import Session
 
-from ..db.connection import get_engine, init_db, get_session
+from ..db.connection import init_db, get_session
 from ..db.queries import (
     get_or_create_test,
     get_recent_tests,
@@ -19,13 +17,13 @@ from ..db.queries import (
     create_tasks_for_run,
 )
 from ..parameters import list_parameters, get_parameter
-from ..core.run_manager import RunManager, RunContext, generate_combinations
+from ..core.run_manager import generate_combinations
 
 console = Console()
 app = typer.Typer()
 
 
-def show_recent_tests(session) -> list:
+def show_recent_tests(session: Session) -> list:
     """Display recent tests and return them."""
     tests = get_recent_tests(session, limit=5)
 
@@ -40,7 +38,7 @@ def show_recent_tests(session) -> list:
     return tests
 
 
-def select_test(session) -> tuple[str, Optional[str]]:
+def select_test(session: Session) -> tuple[str, Optional[str]]:
     """Interactive test selection."""
     recent = show_recent_tests(session)
 
@@ -93,7 +91,12 @@ def select_parameters() -> list[str]:
 
     selection = Prompt.ask("Select parameter(s) (comma-separated numbers)")
 
-    indices = [int(x.strip()) - 1 for x in selection.split(",")]
+    try:
+        indices = [int(x.strip()) - 1 for x in selection.split(",") if x.strip()]
+    except ValueError:
+        console.print("[red]Invalid selection. Please enter comma-separated numbers.[/red]")
+        return []
+
     return [params[i]["name"] for i in indices if 0 <= i < len(params)]
 
 

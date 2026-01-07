@@ -1,0 +1,19 @@
+{
+  "config": {
+    "test_url": "https://optionomega.com/test/6bY1uv8MXrGG7DpVgHZ7",
+    "parameter_type": "entry_time",
+    "delay_seconds": 1,
+    "backtest_timeout": 300,
+    "max_workers": 2,
+    "chrome_path": null,
+    "debug": false,
+    "start_time": "9:35",
+    "end_time": "12:00",
+    "interval_minutes": 5
+  },
+  "completion_percentage": 0.0,
+  "total_tests": 30,
+  "completed_tests": 0,
+  "timestamp": "2025-12-07T19:58:06.939694",
+  "results": []
+}

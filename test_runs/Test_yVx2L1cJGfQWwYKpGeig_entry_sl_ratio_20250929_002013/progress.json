@@ -1,0 +1,154 @@
+{
+  "config": {
+    "test_url": "https://optionomega.com/test/yVx2L1cJGfQWwYKpGeig",
+    "parameter_type": "entry_sl_ratio",
+    "delay_seconds": 1,
+    "backtest_timeout": 300,
+    "max_workers": 2,
+    "chrome_path": null,
+    "debug": true,
+    "sl_ratio_include_empty": false,
+    "sl_ratio_start": 0.01,
+    "sl_ratio_end": 0.6,
+    "sl_ratio_step": 0.05,
+    "test_run_dir": "test_runs/Test_yVx2L1cJGfQWwYKpGeig_entry_sl_ratio_20250929_002013"
+  },
+  "completion_percentage": 100.0,
+  "total_tests": 12,
+  "completed_tests": 12,
+  "timestamp": "2025-09-29T00:29:20.151832",
+  "results": [
+    {
+      "cagr": 0.28,
+      "maxDrawdown": -0.068,
+      "winPercentage": 0.696,
+      "captureRate": 0.076,
+      "mar": 4.11764705882353,
+      "parameter_type": "entry_sl_ratio",
+      "parameter_value": 0.01,
+      "timestamp": "2025-09-29T00:21:16.337633",
+      "worker_id": 0
+    },
+    {
+      "cagr": 0.28,
+      "maxDrawdown": -0.068,
+      "winPercentage": 0.696,
+      "captureRate": 0.076,
+      "mar": 4.11764705882353,
+      "parameter_type": "entry_sl_ratio",
+      "parameter_value": 0.06,
+      "timestamp": "2025-09-29T00:21:34.046792",
+      "worker_id": 1
+    },
+    {
+      "cagr": 0.28,
+      "maxDrawdown": -0.068,
+      "winPercentage": 0.696,
+      "captureRate": 0.076,
+      "mar": 4.11764705882353,
+      "parameter_type": "entry_sl_ratio",
+      "parameter_value": 0.11,
+      "timestamp": "2025-09-29T00:23:02.899446",
+      "worker_id": 0
+    },
+    {
+      "cagr": 0.28,
+      "maxDrawdown": -0.068,
+      "winPercentage": 0.696,
+      "captureRate": 0.076,
+      "mar": 4.11764705882353,
+      "parameter_type": "entry_sl_ratio",
+      "parameter_value": 0.16,
+      "timestamp": "2025-09-29T00:23:13.231112",
+      "worker_id": 1
+    },
+    {
+      "cagr": 0.28,
+      "maxDrawdown": -0.068,
+      "winPercentage": 0.696,
+      "captureRate": 0.076,
+      "mar": 4.11764705882353,
+      "parameter_type": "entry_sl_ratio",
+      "parameter_value": 0.21,
+      "timestamp": "2025-09-29T00:24:43.094607",
+      "worker_id": 0
+    },
+    {
+      "cagr": 0.28,
+      "maxDrawdown": -0.068,
+      "winPercentage": 0.696,
+      "captureRate": 0.076,
+      "mar": 4.11764705882353,
+      "parameter_type": "entry_sl_ratio",
+      "parameter_value": 0.26,
+      "timestamp": "2025-09-29T00:24:54.683890",
+      "worker_id": 1
+    },
+    {
+      "cagr": 0.28,
+      "maxDrawdown": -0.068,
+      "winPercentage": 0.6970000000000001,
+      "captureRate": 0.077,
+      "mar": 4.11764705882353,
+      "parameter_type": "entry_sl_ratio",
+      "parameter_value": 0.31,
+      "timestamp": "2025-09-29T00:25:40.961679",
+      "worker_id": 0
+    },
+    {
+      "cagr": 0.285,
+      "maxDrawdown": -0.067,
+      "winPercentage": 0.7040000000000001,
+      "captureRate": 0.08199999999999999,
+      "mar": 4.253731343283582,
+      "parameter_type": "entry_sl_ratio",
+      "parameter_value": 0.36,
+      "timestamp": "2025-09-29T00:25:52.527885",
+      "worker_id": 1
+    },
+    {
+      "cagr": 0.264,
+      "maxDrawdown": -0.064,
+      "winPercentage": 0.72,
+      "captureRate": 0.09,
+      "mar": 4.124999999999999,
+      "parameter_type": "entry_sl_ratio",
+      "parameter_value": 0.41,
+      "timestamp": "2025-09-29T00:27:00.329488",
+      "worker_id": 0
+    },
+    {
+      "cagr": 0.285,
+      "maxDrawdown": -0.067,
+      "winPercentage": 0.7040000000000001,
+      "captureRate": 0.08199999999999999,
+      "mar": 4.253731343283582,
+      "parameter_type": "entry_sl_ratio",
+      "parameter_value": 0.46,
+      "timestamp": "2025-09-29T00:27:38.859553",
+      "worker_id": 1
+    },
+    {
+      "cagr": 0.264,
+      "maxDrawdown": -0.064,
+      "winPercentage": 0.72,
+      "captureRate": 0.09,
+      "mar": 4.124999999999999,
+      "parameter_type": "entry_sl_ratio",
+      "parameter_value": 0.51,
+      "timestamp": "2025-09-29T00:28:46.433361",
+      "worker_id": 0
+    },
+    {
+      "cagr": 0.225,
+      "maxDrawdown": -0.039,
+      "winPercentage": 0.7909999999999999,
+      "captureRate": 0.131,
+      "mar": 5.769230769230769,
+      "parameter_type": "entry_sl_ratio",
+      "parameter_value": 0.56,
+      "timestamp": "2025-09-29T00:29:11.294111",
+      "worker_id": 1
+    }
+  ]
+}
