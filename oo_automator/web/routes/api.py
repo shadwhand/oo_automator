@@ -2,7 +2,7 @@
 from typing import Optional
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse
-from sqlmodel import Session, select, func
+from sqlmodel import select
 
 from ...db.connection import get_engine, get_session
 from ...db.models import Run, Task, Result
