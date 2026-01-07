@@ -1,0 +1,25 @@
+{% if results %}
+<div class="chart-grid">
+    <div class="chart-container">
+        <canvas id="plChart"></canvas>
+    </div>
+    <div class="chart-container">
+        <canvas id="cagrChart"></canvas>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const labels = [{% for r in results %}'{{ r.task.parameter_values }}'{% if not loop.last %},{% endif %}{% endfor %}];
+    const plData = [{% for r in results %}{{ r.pl or 0 }}{% if not loop.last %},{% endif %}{% endfor %}];
+    const cagrData = [{% for r in results %}{{ r.cagr or 0 }}{% if not loop.last %},{% endif %}{% endfor %}];
+
+    if (window.OOCharts) {
+        OOCharts.createPLChart('plChart', labels, plData);
+        OOCharts.createCAGRChart('cagrChart', labels, cagrData);
+    }
+});
+</script>
+{% else %}
+<p>No results to chart yet.</p>
+{% endif %}
