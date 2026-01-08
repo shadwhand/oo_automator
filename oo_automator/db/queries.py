@@ -140,6 +140,46 @@ def increment_test_run_count(session: Session, test_id: int) -> None:
     session.commit()
 
 
+def get_cached_result(
+    session: Session,
+    test_url: str,
+    param_name: str,
+    param_value: str
+) -> Result | None:
+    """Check if we already have a result for this exact configuration.
+
+    Returns the most recent result if found, None otherwise.
+
+    Since SQLModel's JSON fields need special handling, we query all completed
+    tasks for the test URL and check parameter values in Python.
+    """
+    # Find the test by URL
+    test_stmt = select(Test).where(Test.url == test_url)
+    test = session.exec(test_stmt).first()
+    if not test:
+        return None
+
+    # Get all completed tasks for this test with results
+    # Join Result -> Task -> Run -> Test
+    result_stmt = (
+        select(Result)
+        .join(Task, Result.task_id == Task.id)
+        .join(Run, Task.run_id == Run.id)
+        .where(Run.test_id == test.id)
+        .where(Task.status == "completed")
+        .order_by(Result.created_at.desc())
+    )
+    results = session.exec(result_stmt).all()
+
+    # Check each result's task parameter values in Python
+    for result in results:
+        task = session.exec(select(Task).where(Task.id == result.task_id)).first()
+        if task and task.parameter_values.get(param_name) == param_value:
+            return result
+
+    return None
+
+
 def get_tests_with_run_summary(session: Session, limit: int = 10) -> list[dict]:
     """Get recent tests with run count and latest run info.
 

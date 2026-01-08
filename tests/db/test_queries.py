@@ -10,6 +10,7 @@ from oo_automator.db.queries import (
     get_pending_tasks,
     update_task_status,
     save_result,
+    get_cached_result,
 )
 
 
@@ -112,3 +113,68 @@ def test_save_result(session):
 
     assert result.id is not None
     assert result.cagr == 0.156
+
+
+def test_get_cached_result_found(session):
+    """Test that cached result is found for matching test URL and parameter."""
+    test = get_or_create_test(session, "https://optionomega.com/test/abc123")
+    run = create_run(session, test.id, "sweep", {})
+    tasks = create_tasks_for_run(session, run.id, [{"delta": "5"}])
+
+    # Mark task as completed and save result
+    update_task_status(session, tasks[0].id, "completed")
+    result_data = {
+        "cagr": 0.156,
+        "max_drawdown": -0.08,
+        "win_percentage": 68.2,
+        "pl": 13376.0,
+    }
+    save_result(session, tasks[0].id, result_data)
+
+    # Should find cached result
+    cached = get_cached_result(session, "https://optionomega.com/test/abc123", "delta", "5")
+    assert cached is not None
+    assert cached.cagr == 0.156
+
+
+def test_get_cached_result_not_found_wrong_param(session):
+    """Test that cached result is not found for different parameter value."""
+    test = get_or_create_test(session, "https://optionomega.com/test/abc123")
+    run = create_run(session, test.id, "sweep", {})
+    tasks = create_tasks_for_run(session, run.id, [{"delta": "5"}])
+
+    update_task_status(session, tasks[0].id, "completed")
+    save_result(session, tasks[0].id, {"cagr": 0.156})
+
+    # Should not find cached result for different param value
+    cached = get_cached_result(session, "https://optionomega.com/test/abc123", "delta", "10")
+    assert cached is None
+
+
+def test_get_cached_result_not_found_wrong_url(session):
+    """Test that cached result is not found for different test URL."""
+    test = get_or_create_test(session, "https://optionomega.com/test/abc123")
+    run = create_run(session, test.id, "sweep", {})
+    tasks = create_tasks_for_run(session, run.id, [{"delta": "5"}])
+
+    update_task_status(session, tasks[0].id, "completed")
+    save_result(session, tasks[0].id, {"cagr": 0.156})
+
+    # Should not find cached result for different URL
+    cached = get_cached_result(session, "https://optionomega.com/test/different", "delta", "5")
+    assert cached is None
+
+
+def test_get_cached_result_pending_task_not_cached(session):
+    """Test that pending tasks are not considered for caching."""
+    test = get_or_create_test(session, "https://optionomega.com/test/abc123")
+    run = create_run(session, test.id, "sweep", {})
+    tasks = create_tasks_for_run(session, run.id, [{"delta": "5"}])
+
+    # Task is still pending (not completed), but let's add a result anyway
+    # This shouldn't happen in practice, but let's test the filter
+    save_result(session, tasks[0].id, {"cagr": 0.156})
+
+    # Should not find cached result for pending task
+    cached = get_cached_result(session, "https://optionomega.com/test/abc123", "delta", "5")
+    assert cached is None

@@ -11,7 +11,7 @@ from sqlmodel import select
 
 from ..db.connection import get_engine, get_session
 from ..db.models import Run, Task, Result, Failure
-from ..db.queries import update_task_status, save_result, save_failure, update_run_status
+from ..db.queries import update_task_status, save_result, save_failure, update_run_status, get_cached_result
 from ..browser.worker import BrowserWorker, TaskResult
 
 logger = logging.getLogger(__name__)
@@ -169,8 +169,72 @@ class RunExecutor:
 
                 logger.info(f"Worker {worker_id} processing task {task_id}: {params}")
 
-                # Update task status to running
+                # Check for cached result before running
                 engine = get_engine()
+                session = get_session(engine)
+                cached_result = None
+                try:
+                    # Check cache for each parameter in the combination
+                    for param_name, param_value in params.items():
+                        cached_result = get_cached_result(
+                            session, self.test_url, param_name, str(param_value)
+                        )
+                        if cached_result:
+                            break
+                finally:
+                    session.close()
+
+                if cached_result:
+                    # Use cached result instead of running backtest
+                    logger.info(f"Using cached result for task {task_id}: {params}")
+                    for param_name, param_value in params.items():
+                        logger.info(f"Using cached result for {param_name}={param_value}")
+
+                    # Mark task as completed with cached result
+                    session = get_session(engine)
+                    try:
+                        update_task_status(session, task_id, "completed")
+                        # Copy relevant fields from cached result to new result
+                        result_data = {
+                            "pl": cached_result.pl,
+                            "cagr": cached_result.cagr,
+                            "max_drawdown": cached_result.max_drawdown,
+                            "mar": cached_result.mar,
+                            "win_percentage": cached_result.win_percentage,
+                            "total_premium": cached_result.total_premium,
+                            "capture_rate": cached_result.capture_rate,
+                            "starting_capital": cached_result.starting_capital,
+                            "ending_capital": cached_result.ending_capital,
+                            "total_trades": cached_result.total_trades,
+                            "winners": cached_result.winners,
+                            "avg_per_trade": cached_result.avg_per_trade,
+                            "avg_winner": cached_result.avg_winner,
+                            "avg_loser": cached_result.avg_loser,
+                            "max_winner": cached_result.max_winner,
+                            "max_loser": cached_result.max_loser,
+                            "avg_minutes_in_trade": cached_result.avg_minutes_in_trade,
+                            "raw_data": cached_result.raw_data,
+                            "chart_path": cached_result.chart_path,
+                            "results_screenshot": cached_result.results_screenshot,
+                            "trade_log_csv": cached_result.trade_log_csv,
+                            "trade_count": cached_result.trade_count,
+                            "summary": cached_result.summary,
+                        }
+                        save_result(session, task_id, result_data)
+                        self.queue.mark_completed(task_id)
+                    finally:
+                        session.close()
+
+                    await self._notify_update({
+                        "type": "task_completed",
+                        "task_id": task_id,
+                        "params": params,
+                        "result": result_data,
+                        "cached": True,
+                    })
+                    continue
+
+                # Update task status to running
                 session = get_session(engine)
                 try:
                     update_task_status(session, task_id, "running", increment_attempts=True)
