@@ -7,8 +7,8 @@ from pydantic import BaseModel
 from sqlmodel import select
 
 from ...db.connection import get_engine, get_session, init_db
-from ...db.models import Run, Task, Result
-from ...db.queries import get_or_create_test, create_run, create_tasks_for_run
+from ...db.models import Run, Task, Result, Test
+from ...db.queries import get_or_create_test, create_run, create_tasks_for_run, increment_test_run_count
 from ...core.run_manager import generate_combinations
 from ...core.executor import start_run_execution, stop_run_execution, get_executor
 from ...analysis.recommendations import generate_recommendations
@@ -131,6 +131,9 @@ async def create_new_run(data: NewRunRequest, background_tasks: BackgroundTasks)
 
         # Create run in database
         run = create_run(session, test.id, data.mode, run_config)
+
+        # Update test run count and last_run_at
+        increment_test_run_count(session, test.id)
 
         # Generate task combinations
         combinations = generate_combinations(run_config)
@@ -446,5 +449,31 @@ async def get_task_result(task_id: int):
             result_dict["trade_log_url"] = f"/api/results/{result.id}/artifacts/trade_log"
 
         return result_dict
+    finally:
+        session.close()
+
+
+class TestRenameRequest(BaseModel):
+    """Request body for renaming a test."""
+    name: str
+
+
+@router.patch("/tests/{test_id}")
+async def rename_test(test_id: int, data: TestRenameRequest):
+    """Rename a test."""
+    engine = get_engine()
+    session = get_session(engine)
+
+    try:
+        statement = select(Test).where(Test.id == test_id)
+        test = session.exec(statement).first()
+        if not test:
+            raise HTTPException(status_code=404, detail="Test not found")
+
+        test.name = data.name.strip() if data.name.strip() else None
+        session.commit()
+        session.refresh(test)
+
+        return {"id": test.id, "name": test.name, "message": "Test renamed successfully"}
     finally:
         session.close()

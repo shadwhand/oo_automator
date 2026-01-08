@@ -5,7 +5,17 @@
 {% block content %}
 <div class="page-header">
     <a href="/" class="back-link">&larr; Back to Dashboard</a>
-    <h1>{{ test.name or "(Unnamed Test)" }}</h1>
+    <div class="test-name-container">
+        <h1 class="test-name-display" id="test-name-display" onclick="startEditName()">
+            {{ test.name or "(Click to name this test)" }}
+            <span class="edit-hint">click to edit</span>
+        </h1>
+        <div class="test-name-edit" id="test-name-edit" style="display: none;">
+            <input type="text" id="test-name-input" value="{{ test.name or '' }}" placeholder="Enter test name...">
+            <button onclick="saveName()" class="btn btn-primary btn-sm">Save</button>
+            <button onclick="cancelEditName()" class="btn btn-secondary btn-sm">Cancel</button>
+        </div>
+    </div>
 </div>
 
 <section class="test-info-section">
@@ -21,11 +31,15 @@
             </div>
             <div class="detail-item">
                 <label>Created</label>
-                <span class="value">{{ test.created_at.strftime('%Y-%m-%d %H:%M') if test.created_at else 'N/A' }}</span>
+                <span class="value local-time" data-utc="{{ test.created_at.isoformat() if test.created_at else '' }}">
+                    {{ test.created_at.strftime('%Y-%m-%d %H:%M') if test.created_at else 'N/A' }}
+                </span>
             </div>
             <div class="detail-item">
                 <label>Last Run</label>
-                <span class="value">{{ test.last_run_at.strftime('%Y-%m-%d %H:%M') if test.last_run_at else 'Never' }}</span>
+                <span class="value local-time" data-utc="{{ test.last_run_at.isoformat() if test.last_run_at else '' }}">
+                    {{ test.last_run_at.strftime('%Y-%m-%d %H:%M') if test.last_run_at else 'Never' }}
+                </span>
             </div>
         </div>
     </div>
@@ -53,9 +67,15 @@
                 <td><a href="/runs/{{ run.id }}">#{{ run.id }}</a></td>
                 <td><span class="badge">{{ run.mode }}</span></td>
                 <td><span class="status-badge status-{{ run.status }}">{{ run.status }}</span></td>
-                <td>{{ run.created_at.strftime('%Y-%m-%d %H:%M') if run.created_at else 'N/A' }}</td>
-                <td>
+                <td class="local-time" data-utc="{{ run.created_at.isoformat() if run.created_at else '' }}">
+                    {{ run.created_at.strftime('%Y-%m-%d %H:%M') if run.created_at else 'N/A' }}
+                </td>
+                <td class="actions-cell">
                     <a href="/runs/{{ run.id }}" class="btn btn-small">View</a>
+                    {% if run.status == 'completed' %}
+                    <a href="/runs/{{ run.id }}/results" class="btn btn-small btn-secondary">Results</a>
+                    <a href="/runs/{{ run.id }}/recommendations" class="btn btn-small btn-accent">Recommendations</a>
+                    {% endif %}
                 </td>
             </tr>
             {% endfor %}
@@ -67,6 +87,49 @@
 </section>
 
 <style>
+.test-name-container {
+    position: relative;
+}
+
+.test-name-display {
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.test-name-display:hover {
+    color: var(--primary);
+}
+
+.edit-hint {
+    font-size: 0.7rem;
+    color: var(--text-muted, #6c757d);
+    font-weight: normal;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.test-name-display:hover .edit-hint {
+    opacity: 1;
+}
+
+.test-name-edit {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.test-name-edit input {
+    font-size: 1.5rem;
+    padding: 0.5rem;
+    border: 2px solid var(--primary);
+    border-radius: 4px;
+    background: var(--surface);
+    color: var(--text);
+    min-width: 300px;
+}
+
 .test-info-section {
     background: var(--surface);
     padding: 24px;
@@ -135,9 +198,28 @@
     text-decoration: underline;
 }
 
+.actions-cell {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
 .btn-small {
     padding: 4px 12px;
     font-size: 0.875rem;
+}
+
+.btn-accent {
+    background: var(--accent, #8b5cf6);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.btn-accent:hover {
+    background: var(--accent-hover, #7c3aed);
 }
 
 .status-badge {
@@ -168,4 +250,72 @@
     color: var(--error-text, #991b1b);
 }
 </style>
+
+<script>
+const testId = {{ test.id }};
+
+function startEditName() {
+    document.getElementById('test-name-display').style.display = 'none';
+    document.getElementById('test-name-edit').style.display = 'flex';
+    document.getElementById('test-name-input').focus();
+    document.getElementById('test-name-input').select();
+}
+
+function cancelEditName() {
+    document.getElementById('test-name-edit').style.display = 'none';
+    document.getElementById('test-name-display').style.display = 'inline-flex';
+}
+
+async function saveName() {
+    const input = document.getElementById('test-name-input');
+    const newName = input.value.trim();
+
+    try {
+        const response = await fetch(`/api/tests/${testId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: newName })
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to save name');
+        }
+
+        const data = await response.json();
+        const display = document.getElementById('test-name-display');
+        display.innerHTML = (data.name || '(Click to name this test)') + '<span class="edit-hint">click to edit</span>';
+        cancelEditName();
+    } catch (error) {
+        alert('Failed to save name: ' + error.message);
+    }
+}
+
+// Handle Enter key in input
+document.getElementById('test-name-input').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+        saveName();
+    } else if (e.key === 'Escape') {
+        cancelEditName();
+    }
+});
+
+// Convert UTC timestamps to local time
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.local-time').forEach(function(el) {
+        const utc = el.dataset.utc;
+        if (utc) {
+            const date = new Date(utc + 'Z'); // Append Z to indicate UTC
+            if (!isNaN(date.getTime())) {
+                el.textContent = date.toLocaleString(undefined, {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            }
+        }
+    });
+});
+</script>
 {% endblock %}

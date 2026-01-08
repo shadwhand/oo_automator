@@ -28,7 +28,7 @@
                         <div class="test-meta">
                             <span class="run-count">{{ test.run_count }} run{% if test.run_count != 1 %}s{% endif %}</span>
                             {% if test.last_run_at %}
-                            <span class="last-run">Last: {{ test.last_run_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                            <span class="last-run local-time" data-utc="{{ test.last_run_at.isoformat() }}">Last: {{ test.last_run_at.strftime('%Y-%m-%d %H:%M') }}</span>
                             {% endif %}
                         </div>
                         {% if latest_result %}
@@ -160,4 +160,33 @@
     background: var(--bg-secondary-hover, #5a6268);
 }
 </style>
+
+<script>
+// Convert UTC timestamps to local time
+document.addEventListener('DOMContentLoaded', function() {
+    function convertLocalTimes() {
+        document.querySelectorAll('.local-time').forEach(function(el) {
+            const utc = el.dataset.utc;
+            if (utc && !el.dataset.converted) {
+                const date = new Date(utc + 'Z');
+                if (!isNaN(date.getTime())) {
+                    const formatted = date.toLocaleString(undefined, {
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                    el.textContent = 'Last: ' + formatted;
+                    el.dataset.converted = 'true';
+                }
+            }
+        });
+    }
+
+    convertLocalTimes();
+
+    // Re-run after htmx updates
+    document.body.addEventListener('htmx:afterSwap', convertLocalTimes);
+});
+</script>
 {% endblock %}
