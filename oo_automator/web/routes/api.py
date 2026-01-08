@@ -11,6 +11,7 @@ from ...db.models import Run, Task, Result
 from ...db.queries import get_or_create_test, create_run, create_tasks_for_run
 from ...core.run_manager import generate_combinations
 from ...core.executor import start_run_execution, stop_run_execution, get_executor
+from ...analysis.recommendations import generate_recommendations
 from ..templates_config import get_templates
 from .websocket import notify_run_update
 
@@ -261,6 +262,89 @@ async def get_run_results(request: Request, run_id: int):
             )
 
         return {"results": [result.model_dump() for result in results]}
+    finally:
+        session.close()
+
+
+@router.get("/runs/{run_id}/recommendations")
+async def get_run_recommendations(run_id: int, goal: str = "balanced"):
+    """Get recommendations for a run based on backtesting results.
+
+    Args:
+        run_id: The run ID to get recommendations for.
+        goal: Optimization goal - 'balanced', 'maximize_returns', or 'protect_capital'.
+
+    Returns:
+        Recommendations dict with top_pick, alternatives, avoid, and goal.
+    """
+    engine = get_engine()
+    session = get_session(engine)
+
+    try:
+        # Check if run exists
+        statement = select(Run).where(Run.id == run_id)
+        run = session.exec(statement).first()
+        if not run:
+            raise HTTPException(status_code=404, detail="Run not found")
+
+        # Get all results for this run joined with tasks
+        statement = (
+            select(Result, Task)
+            .join(Task)
+            .where(Task.run_id == run_id)
+            .order_by(Result.task_id)
+        )
+        rows = list(session.exec(statement).all())
+
+        # Build results list with calculated metrics
+        results = []
+        for result, task in rows:
+            # Convert CAGR and max_drawdown from percentage to decimal
+            cagr_decimal = (result.cagr or 0) / 100
+            max_dd_decimal = (result.max_drawdown or 0) / 100
+
+            # Calculate Sharpe ratio: (cagr - risk_free_rate) / volatility_proxy
+            # Using max_dd / 2 as volatility proxy
+            if max_dd_decimal > 0:
+                sharpe = (cagr_decimal - 0.05) / (max_dd_decimal / 2)
+            else:
+                sharpe = 0
+
+            # Calculate Kelly criterion
+            # kelly = (win_pct - ((1 - win_pct) / win_loss_ratio)) * 100
+            win_pct = (result.win_percentage or 0) / 100
+            avg_winner = result.avg_winner or 0
+            avg_loser = abs(result.avg_loser or 1)  # Ensure positive denominator
+            win_loss_ratio = avg_winner / avg_loser if avg_loser != 0 else 0
+
+            if win_loss_ratio > 0:
+                kelly = (win_pct - ((1 - win_pct) / win_loss_ratio)) * 100
+            else:
+                kelly = 0
+
+            # Extract parameter info from task
+            param_values = task.parameter_values or {}
+            param_name = list(param_values.keys())[0] if param_values else None
+            param_value = param_values.get(param_name) if param_name else None
+
+            results.append({
+                "task_id": task.id,
+                "param_name": param_name,
+                "param_value": param_value,
+                "cagr": result.cagr or 0,
+                "max_drawdown": result.max_drawdown or 0,
+                "win_percentage": result.win_percentage or 0,
+                "sharpe": sharpe,
+                "kelly": kelly,
+                "avg_winner": result.avg_winner or 0,
+                "avg_loser": result.avg_loser or 0,
+                "capture_rate": result.capture_rate or 0,
+            })
+
+        # Generate recommendations
+        recommendations = generate_recommendations(results, goal)
+
+        return recommendations
     finally:
         session.close()
 
