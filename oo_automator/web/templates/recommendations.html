@@ -1,0 +1,503 @@
+{% extends "base.html" %}
+
+{% block title %}Recommendations - Run #{{ run.id }} - OO Automator{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <a href="/runs/{{ run.id }}" class="back-link">&larr; Back to Run</a>
+    <h1>Recommendations - Run #{{ run.id }}</h1>
+    <p class="subtitle">{{ test.name or test.url }}</p>
+</div>
+
+<div class="results-controls">
+    <div class="view-toggle">
+        <a href="/runs/{{ run.id }}/results" class="btn btn-secondary">Basic View</a>
+        <a href="/runs/{{ run.id }}/advanced" class="btn btn-secondary">Advanced View</a>
+        <a href="/runs/{{ run.id }}/recommendations?goal={{ goal }}" class="btn btn-primary">Recommendations</a>
+    </div>
+    <div class="export-buttons">
+        <button onclick="exportForAI()" class="btn btn-secondary">Export for AI</button>
+    </div>
+</div>
+
+<div class="goal-selector">
+    <span class="goal-label">Optimization Goal:</span>
+    <a href="/runs/{{ run.id }}/recommendations?goal=maximize_returns" class="goal-btn {% if goal == 'maximize_returns' %}active{% endif %}">Maximize Returns</a>
+    <a href="/runs/{{ run.id }}/recommendations?goal=protect_capital" class="goal-btn {% if goal == 'protect_capital' %}active{% endif %}">Protect Capital</a>
+    <a href="/runs/{{ run.id }}/recommendations?goal=balanced" class="goal-btn {% if goal == 'balanced' %}active{% endif %}">Balanced</a>
+</div>
+
+{% if recommendations.top_pick %}
+<div class="top-recommendation">
+    <div class="section-header">
+        <h2>Top Recommendation</h2>
+    </div>
+    <div class="recommendation-card top-card">
+        <div class="card-header">
+            <div class="param-info">
+                <span class="param-name">{{ recommendations.top_pick.param_name }}</span>
+                <span class="param-value">{{ recommendations.top_pick.param_value }}</span>
+            </div>
+            <div class="score-badge">
+                {% set score = recommendations.top_pick._score if recommendations.top_pick._score else 0 %}
+                {% for r in results %}
+                    {% if r.param_value == recommendations.top_pick.param_value %}
+                        {% set score = (r.sharpe * 15 + r.cagr * 0.5 + r.win_percentage * 0.5 + r.kelly * 0.3) | round(0) %}
+                    {% endif %}
+                {% endfor %}
+                <span class="score">Score</span>
+            </div>
+        </div>
+        <div class="metrics-row">
+            <div class="metric">
+                <span class="metric-label">CAGR</span>
+                <span class="metric-value">{{ "%.2f"|format(recommendations.top_pick.cagr) }}%</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Max DD</span>
+                <span class="metric-value">{{ "%.2f"|format(recommendations.top_pick.max_drawdown) }}%</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Sharpe</span>
+                <span class="metric-value">{{ "%.2f"|format(recommendations.top_pick.sharpe) }}</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Win %</span>
+                <span class="metric-value">{{ "%.1f"|format(recommendations.top_pick.win_percentage) }}%</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Kelly</span>
+                <span class="metric-value">{{ "%.1f"|format(recommendations.top_pick.kelly) }}%</span>
+            </div>
+        </div>
+        <div class="explanation">
+            {% if goal == 'maximize_returns' %}
+            This configuration offers the highest risk-adjusted returns. It prioritizes CAGR while maintaining acceptable drawdown levels.
+            {% elif goal == 'protect_capital' %}
+            This configuration minimizes risk exposure. It has the best combination of low drawdown and consistent win rate.
+            {% else %}
+            This configuration provides the best balance of returns and risk. It scores highest across all weighted metrics.
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if recommendations.alternatives %}
+<div class="alternatives-section">
+    <div class="section-header">
+        <h2>Alternatives</h2>
+        <span class="section-subtitle">Other Pareto optimal configurations</span>
+    </div>
+    <div class="alternatives-grid">
+        {% for alt in recommendations.alternatives %}
+        <div class="recommendation-card alt-card">
+            <div class="card-header">
+                <div class="param-info">
+                    <span class="param-name">{{ alt.param_name }}</span>
+                    <span class="param-value">{{ alt.param_value }}</span>
+                </div>
+            </div>
+            <div class="metrics-row compact">
+                <div class="metric">
+                    <span class="metric-label">CAGR</span>
+                    <span class="metric-value">{{ "%.2f"|format(alt.cagr) }}%</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Max DD</span>
+                    <span class="metric-value">{{ "%.2f"|format(alt.max_drawdown) }}%</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Sharpe</span>
+                    <span class="metric-value">{{ "%.2f"|format(alt.sharpe) }}</span>
+                </div>
+            </div>
+            <div class="trade-off">
+                {% if alt.cagr > recommendations.top_pick.cagr %}
+                <span class="trade-off-tag positive">+{{ "%.1f"|format(alt.cagr - recommendations.top_pick.cagr) }}% CAGR</span>
+                {% elif alt.max_drawdown < recommendations.top_pick.max_drawdown %}
+                <span class="trade-off-tag positive">Less risk ({{ "%.1f"|format(recommendations.top_pick.max_drawdown - alt.max_drawdown) }}% less DD)</span>
+                {% elif alt.win_percentage > recommendations.top_pick.win_percentage %}
+                <span class="trade-off-tag positive">+{{ "%.1f"|format(alt.win_percentage - recommendations.top_pick.win_percentage) }}% win rate</span>
+                {% else %}
+                <span class="trade-off-tag neutral">Different risk/return profile</span>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{% if recommendations.avoid %}
+<div class="avoid-section">
+    <div class="section-header">
+        <h2>Avoid</h2>
+        <span class="section-subtitle">Dominated configurations with lower scores</span>
+    </div>
+    <div class="avoid-list">
+        {% for avoid in recommendations.avoid %}
+        <div class="avoid-item">
+            <div class="avoid-param">
+                <span class="param-name">{{ avoid.param_name }}</span>
+                <span class="param-value">{{ avoid.param_value }}</span>
+            </div>
+            <div class="avoid-metrics">
+                <span>CAGR: {{ "%.2f"|format(avoid.cagr) }}%</span>
+                <span>Max DD: {{ "%.2f"|format(avoid.max_drawdown) }}%</span>
+                <span>Win: {{ "%.1f"|format(avoid.win_percentage) }}%</span>
+            </div>
+            <div class="avoid-reason">
+                {% if avoid.max_drawdown > recommendations.top_pick.max_drawdown and avoid.cagr < recommendations.top_pick.cagr %}
+                Higher risk with lower returns - dominated by top pick
+                {% elif avoid.sharpe < 0 %}
+                Negative risk-adjusted returns
+                {% elif avoid.max_drawdown > 30 %}
+                Excessive drawdown risk (>30%)
+                {% elif avoid.win_percentage < 40 %}
+                Low win rate (<40%)
+                {% else %}
+                Lower overall score - better alternatives exist
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{% if not recommendations.top_pick %}
+<div class="empty-state">
+    <p>No results available for recommendations. Run some backtests first.</p>
+    <a href="/runs/{{ run.id }}" class="btn btn-primary">Back to Run</a>
+</div>
+{% endif %}
+
+<style>
+.page-header {
+    margin-bottom: 24px;
+}
+.subtitle {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-top: 4px;
+}
+.results-controls {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    gap: 16px;
+}
+.view-toggle {
+    display: flex;
+    gap: 8px;
+}
+
+.goal-selector {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+    padding: 16px;
+    background: var(--surface);
+    border-radius: 8px;
+}
+.goal-label {
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+.goal-btn {
+    padding: 8px 16px;
+    border-radius: 6px;
+    text-decoration: none;
+    color: var(--text);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    transition: all 0.2s;
+}
+.goal-btn:hover {
+    background: var(--border);
+}
+.goal-btn.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+
+.section-header {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+.section-header h2 {
+    margin: 0;
+    font-size: 1.25rem;
+}
+.section-subtitle {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+
+.top-recommendation {
+    margin-bottom: 32px;
+}
+
+.recommendation-card {
+    background: var(--surface);
+    border-radius: 12px;
+    padding: 20px;
+    border: 2px solid var(--border);
+}
+.recommendation-card.top-card {
+    border-color: #22c55e;
+    background: linear-gradient(135deg, var(--surface) 0%, rgba(34, 197, 94, 0.1) 100%);
+}
+.recommendation-card.alt-card {
+    border-color: var(--border);
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 16px;
+}
+.param-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.param-name {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+.param-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    font-family: 'SF Mono', 'Monaco', monospace;
+}
+.alt-card .param-value {
+    font-size: 1.25rem;
+}
+
+.score-badge {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 8px 16px;
+    background: #22c55e;
+    border-radius: 8px;
+    color: white;
+}
+.score-badge .score {
+    font-size: 0.75rem;
+    opacity: 0.9;
+}
+.score-badge .score-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.metrics-row {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+.metrics-row.compact {
+    gap: 16px;
+    margin-bottom: 12px;
+}
+.metric {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.metric-label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+}
+.metric-value {
+    font-size: 1.1rem;
+    font-weight: 600;
+    font-family: 'SF Mono', 'Monaco', monospace;
+}
+.compact .metric-value {
+    font-size: 0.95rem;
+}
+
+.explanation {
+    padding: 12px 16px;
+    background: rgba(34, 197, 94, 0.15);
+    border-radius: 6px;
+    color: var(--text);
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+.alternatives-section {
+    margin-bottom: 32px;
+}
+.alternatives-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+}
+
+.trade-off {
+    margin-top: 8px;
+}
+.trade-off-tag {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+.trade-off-tag.positive {
+    background: rgba(34, 197, 94, 0.2);
+    color: #22c55e;
+}
+.trade-off-tag.neutral {
+    background: rgba(156, 163, 175, 0.2);
+    color: var(--text-secondary);
+}
+
+.avoid-section {
+    margin-bottom: 32px;
+}
+.avoid-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.avoid-item {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    padding: 16px;
+    background: var(--surface);
+    border-radius: 8px;
+    border-left: 4px solid #f97316;
+}
+.avoid-param {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 120px;
+}
+.avoid-param .param-name {
+    font-size: 0.75rem;
+}
+.avoid-param .param-value {
+    font-size: 1.1rem;
+}
+.avoid-metrics {
+    display: flex;
+    gap: 16px;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    font-family: 'SF Mono', 'Monaco', monospace;
+}
+.avoid-reason {
+    flex: 1;
+    font-size: 0.85rem;
+    color: #f97316;
+    text-align: right;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 48px;
+    background: var(--surface);
+    border-radius: 12px;
+}
+.empty-state p {
+    margin-bottom: 16px;
+    color: var(--text-secondary);
+}
+</style>
+
+<script>
+function exportForAI() {
+    const testName = "{{ test.name or test.url }}";
+    const runId = {{ run.id }};
+    const goal = "{{ goal }}";
+
+    // Get all results sorted by score (approximated by CAGR for simplicity in export)
+    const allResults = [
+        {% for r in results %}
+        {
+            param: "{{ r.param_name }}={{ r.param_value }}",
+            cagr: {{ r.cagr }},
+            maxDD: {{ r.max_drawdown }},
+            sharpe: {{ r.sharpe }},
+            winPct: {{ r.win_percentage }},
+            kelly: {{ r.kelly }},
+            trades: {{ r.total_trades }}
+        },
+        {% endfor %}
+    ];
+
+    // Sort by CAGR descending for top 5
+    const sortedByCAGR = [...allResults].sort((a, b) => b.cagr - a.cagr);
+    const top5 = sortedByCAGR.slice(0, 5);
+    const worst3 = sortedByCAGR.slice(-3).reverse();
+
+    // Build the prompt
+    let prompt = `## Strategy Backtest Analysis Request
+
+**Strategy:** ${testName}
+**Run ID:** ${runId}
+**Optimization Goal:** ${goal === 'maximize_returns' ? 'Maximize Returns' : goal === 'protect_capital' ? 'Protect Capital' : 'Balanced'}
+
+### Top 5 Configurations by CAGR
+
+| Parameter | CAGR % | Max DD % | Sharpe | Win % | Kelly % |
+|-----------|--------|----------|--------|-------|---------|
+`;
+
+    top5.forEach(r => {
+        prompt += `| ${r.param} | ${r.cagr.toFixed(2)} | ${r.maxDD.toFixed(2)} | ${r.sharpe.toFixed(2)} | ${r.winPct.toFixed(1)} | ${r.kelly.toFixed(1)} |\n`;
+    });
+
+    prompt += `
+### Worst 3 Configurations
+
+| Parameter | CAGR % | Max DD % | Sharpe | Win % | Kelly % |
+|-----------|--------|----------|--------|-------|---------|
+`;
+
+    worst3.forEach(r => {
+        prompt += `| ${r.param} | ${r.cagr.toFixed(2)} | ${r.maxDD.toFixed(2)} | ${r.sharpe.toFixed(2)} | ${r.winPct.toFixed(1)} | ${r.kelly.toFixed(1)} |\n`;
+    });
+
+    prompt += `
+### Analysis Request
+
+Based on the optimization goal of "${goal === 'maximize_returns' ? 'maximizing returns' : goal === 'protect_capital' ? 'protecting capital' : 'balanced risk/return'}":
+
+1. What patterns do you observe in the top-performing configurations?
+2. What makes the worst configurations underperform?
+3. Would you recommend any parameter values between the tested values?
+4. What additional tests would help refine the optimal configuration?
+`;
+
+    // Copy to clipboard
+    navigator.clipboard.writeText(prompt).then(() => {
+        alert('Copied to clipboard! Paste into ChatGPT or Claude for analysis.');
+    }).catch(err => {
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = prompt;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        alert('Copied to clipboard! Paste into ChatGPT or Claude for analysis.');
+    });
+}
+</script>
+{% endblock %}

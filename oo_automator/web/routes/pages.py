@@ -9,6 +9,7 @@ from ...db.queries import get_recent_tests
 from ...parameters import list_parameters
 from ...config import get_config
 from ..templates_config import get_templates
+from ...analysis.recommendations import generate_recommendations
 
 router = APIRouter()
 
@@ -249,7 +250,7 @@ async def run_advanced_metrics(request: Request, run_id: int):
 
         # Build results list with advanced metrics
         results = []
-        risk_free_rate = 0.02  # Assume 2% risk-free rate
+        risk_free_rate = 0.05  # Current risk-free rate ~5% (T-bills)
 
         for result, task in results_data:
             # Get parameter info
@@ -257,54 +258,75 @@ async def run_advanced_metrics(request: Request, run_id: int):
             param_name = list(param_values.keys())[0] if param_values else "unknown"
             param_value = param_values.get(param_name, "")
 
-            # Basic metrics
-            cagr = (result.cagr or 0) / 100  # Convert to decimal
-            max_dd = abs(result.max_drawdown or 0) / 100  # Convert to decimal
+            # Basic metrics (convert percentages to decimals for calculations)
+            cagr_pct = result.cagr or 0  # Keep as percentage for display
+            cagr = cagr_pct / 100  # Decimal for calculations
+            max_dd_pct = abs(result.max_drawdown or 0)  # Keep as percentage
+            max_dd = max_dd_pct / 100  # Decimal for calculations
             win_pct = (result.win_percentage or 0) / 100
-            capture_rate = (result.capture_rate or 0) / 100
+            capture_rate = result.capture_rate or 0
             avg_winner = result.avg_winner or 0
-            avg_loser = abs(result.avg_loser or 1)
-            total_trades = result.total_trades or result.winners or 0
+            avg_loser = abs(result.avg_loser or 0)
+            total_trades = result.total_trades or 0
+            winners = result.winners or 0
+            losers = total_trades - winners if total_trades > 0 else 0
 
-            # MAR ratio
+            # Loss rate
+            loss_pct = 1 - win_pct
+
+            # MAR Ratio: CAGR / Max Drawdown (return per unit of risk)
             mar = cagr / max_dd if max_dd > 0 else 0
 
-            # Profit factor
-            loss_pct = 1 - win_pct
-            profit_factor = (avg_winner * win_pct) / (avg_loser * loss_pct) if loss_pct > 0 and avg_loser > 0 else 0
+            # Profit Factor: Gross Profit / Gross Loss
+            # = (Avg Winner × Winners) / (Avg Loser × Losers)
+            # Simplified: (Avg Winner × Win Rate) / (Avg Loser × Loss Rate)
+            if loss_pct > 0 and avg_loser > 0:
+                profit_factor = (avg_winner * win_pct) / (avg_loser * loss_pct)
+            else:
+                profit_factor = float('inf') if avg_winner > 0 else 0
 
-            # Expected value per trade
+            # Expected Value (Expectancy): Average profit per trade
+            # EV = (Win% × Avg Win) - (Loss% × Avg Loss)
             expected_value = (avg_winner * win_pct) - (avg_loser * loss_pct)
+            expectancy = expected_value  # Same metric, different name
 
-            # Expectancy (same as expected value)
-            expectancy = expected_value
+            # CAGR to MDD Ratio (same as MAR, kept for compatibility)
+            cagr_to_mdd = mar
 
-            # CAGR to MDD
-            cagr_to_mdd = cagr / max_dd if max_dd > 0 else 0
-
-            # Loser ratio % (loss rate as percentage)
+            # Loser percentage (inverse of win rate)
             loser_ratio_pct = loss_pct * 100
 
-            # Recovery ratio
-            recovery_ratio = avg_winner / (max_dd * 10000) if max_dd > 0 else 0  # Scaled
+            # Recovery Factor: Total Net Profit / Max Drawdown
+            # Approximated as: (CAGR × Years) / Max DD, using 1 year
+            # Higher = recovers faster from drawdowns
+            recovery_ratio = cagr / max_dd if max_dd > 0 else 0
 
-            # Sharpe Ratio approximation
-            # Using max_dd as proxy for volatility (rough approximation)
-            volatility = max_dd * 2 if max_dd > 0 else 0.1  # Estimate annualized vol
-            sharpe = (cagr - risk_free_rate) / volatility if volatility > 0 else 0
+            # Sharpe Ratio: (Return - Risk Free) / Volatility
+            # We estimate volatility from max drawdown (MDD ≈ 2σ for normal dist)
+            # So σ ≈ MDD / 2
+            estimated_volatility = max_dd / 2 if max_dd > 0 else 0.1
+            sharpe = (cagr - risk_free_rate) / estimated_volatility if estimated_volatility > 0 else 0
 
-            # Sortino Ratio approximation
-            # Downside deviation is typically lower than total volatility
-            downside_vol = max_dd * 1.5 if max_dd > 0 else 0.1
-            sortino = (cagr - risk_free_rate) / downside_vol if downside_vol > 0 else 0
+            # Sortino Ratio: (Return - Risk Free) / Downside Deviation
+            # Downside deviation ≈ MDD / 1.5 (only negative returns)
+            downside_deviation = max_dd / 1.5 if max_dd > 0 else 0.1
+            sortino = (cagr - risk_free_rate) / downside_deviation if downside_deviation > 0 else 0
 
-            # Kelly Criterion %
-            # Kelly = W - [(1-W) / R] where W = win rate, R = win/loss ratio
-            win_loss_ratio = avg_winner / avg_loser if avg_loser > 0 else 1
-            kelly = (win_pct - ((1 - win_pct) / win_loss_ratio)) * 100 if win_loss_ratio > 0 else 0
+            # Kelly Criterion: Optimal position size percentage
+            # Kelly % = W - [(1-W) / R]
+            # Where W = win rate, R = avg winner / avg loser
+            if avg_loser > 0:
+                win_loss_ratio = avg_winner / avg_loser
+                if win_loss_ratio > 0:
+                    kelly = (win_pct - (loss_pct / win_loss_ratio)) * 100
+                else:
+                    kelly = 0
+            else:
+                kelly = win_pct * 100 if avg_winner > 0 else 0
 
-            # CalMAR (typically 3-year CAGR / Max DD, we use CAGR)
-            calmar = cagr / max_dd if max_dd > 0 else 0
+            # Calmar Ratio: CAGR / Max Drawdown (same as MAR)
+            # Traditionally uses 3-year CAGR, but we use available CAGR
+            calmar = mar
 
             results.append({
                 "task_id": task.id,
@@ -359,6 +381,105 @@ async def test_detail(request: Request, test_id: int):
             request,
             "test.html",
             {"test": test, "runs": runs}
+        )
+    finally:
+        session.close()
+
+
+@router.get("/runs/{run_id}/recommendations", response_class=HTMLResponse)
+async def run_recommendations_page(request: Request, run_id: int, goal: str = "balanced"):
+    """Recommendations page for a run."""
+    templates = get_templates()
+    engine = get_engine()
+    session = get_session(engine)
+
+    try:
+        from ...db.models import Task, Result
+
+        # Get run info
+        run_stmt = select(Run).where(Run.id == run_id)
+        run = session.exec(run_stmt).first()
+        if not run:
+            raise HTTPException(status_code=404, detail="Run not found")
+
+        # Get test info
+        test_stmt = select(Test).where(Test.id == run.test_id)
+        test = session.exec(test_stmt).first()
+
+        # Get all results for this run with task info
+        results_stmt = (
+            select(Result, Task)
+            .join(Task, Result.task_id == Task.id)
+            .where(Task.run_id == run_id)
+            .order_by(Task.id)
+        )
+        results_data = list(session.exec(results_stmt).all())
+
+        # Build results list with computed metrics for recommendations
+        results = []
+        risk_free_rate = 0.05  # Current risk-free rate ~5%
+
+        for result, task in results_data:
+            # Get parameter info
+            param_values = task.parameter_values or {}
+            param_name = list(param_values.keys())[0] if param_values else "unknown"
+            param_value = param_values.get(param_name, "")
+
+            # Basic metrics (convert percentages to decimals for calculations)
+            cagr_pct = result.cagr or 0
+            cagr = cagr_pct / 100
+            max_dd_pct = abs(result.max_drawdown or 0)
+            max_dd = max_dd_pct / 100
+            win_pct = (result.win_percentage or 0) / 100
+            avg_winner = result.avg_winner or 0
+            avg_loser = abs(result.avg_loser or 0)
+            total_trades = result.total_trades or 0
+            winners = result.winners or 0
+
+            loss_pct = 1 - win_pct
+
+            # Sharpe Ratio (estimated volatility from max drawdown)
+            estimated_volatility = max_dd / 2 if max_dd > 0 else 0.1
+            sharpe = (cagr - risk_free_rate) / estimated_volatility if estimated_volatility > 0 else 0
+
+            # Kelly Criterion
+            if avg_loser > 0:
+                win_loss_ratio = avg_winner / avg_loser
+                if win_loss_ratio > 0:
+                    kelly = (win_pct - (loss_pct / win_loss_ratio)) * 100
+                else:
+                    kelly = 0
+            else:
+                kelly = win_pct * 100 if avg_winner > 0 else 0
+
+            results.append({
+                "task_id": task.id,
+                "param_name": param_name,
+                "param_value": param_value,
+                "cagr": cagr_pct,
+                "max_drawdown": max_dd_pct,
+                "win_percentage": result.win_percentage or 0,
+                "sharpe": sharpe,
+                "kelly": kelly,
+                "total_trades": total_trades,
+                "winners": winners,
+                "avg_winner": avg_winner,
+                "avg_loser": result.avg_loser or 0,
+            })
+
+        # Generate recommendations
+        recommendations = generate_recommendations(results, goal=goal)
+
+        return templates.TemplateResponse(
+            request,
+            "recommendations.html",
+            {
+                "run": run,
+                "test": test,
+                "recommendations": recommendations,
+                "goal": goal,
+                "results": results,
+            }
         )
     finally:
         session.close()
