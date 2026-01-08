@@ -1,9 +1,31 @@
 """Browser worker for executing backtest tasks."""
 import asyncio
 from dataclasses import dataclass, field
+from datetime import datetime, timedelta
 from enum import Enum
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 from playwright.async_api import async_playwright, Page, Browser, BrowserContext
+
+# Rate limiting configuration
+MIN_REQUEST_DELAY = 6  # Minimum seconds between requests
+MAX_REQUESTS_PER_MINUTE = 10
+
+# Module-level variable to track last request time
+_last_request_time: datetime | None = None
+
+
+async def wait_for_rate_limit():
+    """Wait if needed to respect rate limits."""
+    global _last_request_time
+
+    if _last_request_time is not None:
+        elapsed = (datetime.now() - _last_request_time).total_seconds()
+        if elapsed < MIN_REQUEST_DELAY:
+            wait_time = MIN_REQUEST_DELAY - elapsed
+            print(f"Rate limiting: waiting {wait_time:.1f}s")
+            await asyncio.sleep(wait_time)
+
+    _last_request_time = datetime.now()
 
 from .actions import (
     login,
@@ -95,6 +117,19 @@ class BrowserWorker:
     def page(self) -> Optional[Page]:
         return self._page
 
+    async def run_with_retry(self, func: Callable, max_retries: int = 3):
+        """Run function with exponential backoff on failure."""
+        for attempt in range(max_retries):
+            try:
+                await wait_for_rate_limit()
+                return await func()
+            except Exception as e:
+                if attempt == max_retries - 1:
+                    raise
+                wait_time = (2 ** attempt) * 5  # 5s, 10s, 20s
+                print(f"[Worker {self.worker_id}] Retry {attempt + 1}/{max_retries} after {wait_time}s: {e}")
+                await asyncio.sleep(wait_time)
+
     async def ensure_logged_in(self, email: str, password: str, base_url: str) -> bool:
         """Ensure worker is logged in."""
         if self._is_logged_in:
@@ -124,6 +159,9 @@ class BrowserWorker:
         self.state = WorkerState.RUNNING
         self.current_task = task_id
         print(f"[Worker {self.worker_id}] Starting task {task_id}: {parameter_values}")
+
+        # Apply rate limiting before any OptionOmega interactions
+        await wait_for_rate_limit()
 
         try:
             # Ensure logged in
