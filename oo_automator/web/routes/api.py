@@ -10,7 +10,7 @@ from ...db.connection import get_engine, get_session, init_db
 from ...db.models import Run, Task, Result, Test
 from ...db.queries import get_or_create_test, create_run, create_tasks_for_run, increment_test_run_count
 from ...core.run_manager import generate_combinations
-from ...core.executor import start_run_execution, stop_run_execution, get_executor
+from ...core.executor import start_run_execution, stop_run_execution, pause_run_execution, get_executor
 from ...analysis.recommendations import generate_recommendations
 from ..templates_config import get_templates
 from .websocket import notify_run_update
@@ -385,6 +385,113 @@ async def stop_run(run_id: int):
         session.close()
 
     return {"status": "stopped", "message": f"Run #{run_id} stopped"}
+
+
+@router.post("/runs/{run_id}/pause")
+async def pause_run(run_id: int):
+    """Pause a running execution."""
+    executor = get_executor(run_id)
+    if not executor:
+        engine = get_engine()
+        session = get_session(engine)
+        try:
+            statement = select(Run).where(Run.id == run_id)
+            run = session.exec(statement).first()
+            if not run:
+                raise HTTPException(status_code=404, detail="Run not found")
+            if run.status != "running":
+                raise HTTPException(status_code=400, detail=f"Run is not running (status: {run.status})")
+            return {"status": "error", "message": "Run was not actively executing"}
+        finally:
+            session.close()
+
+    # Pause the executor
+    pause_run_execution(run_id)
+
+    # Update run status
+    engine = get_engine()
+    session = get_session(engine)
+    try:
+        from ...db.queries import update_run_status
+        update_run_status(session, run_id, "paused")
+    finally:
+        session.close()
+
+    return {"status": "paused", "message": f"Run #{run_id} paused"}
+
+
+@router.post("/runs/{run_id}/resume")
+async def resume_run(run_id: int, background_tasks: BackgroundTasks):
+    """Resume a paused or stopped run from where it left off."""
+    import os
+    engine = get_engine()
+    session = get_session(engine)
+
+    try:
+        statement = select(Run).where(Run.id == run_id)
+        run = session.exec(statement).first()
+        if not run:
+            raise HTTPException(status_code=404, detail="Run not found")
+
+        if run.status not in ["paused", "stopped", "failed"]:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Can only resume paused, stopped, or failed runs (current: {run.status})"
+            )
+
+        # Check if there are pending tasks
+        pending_stmt = select(Task).where(
+            Task.run_id == run_id,
+            Task.status.in_(["pending", "running"])
+        )
+        pending_tasks = list(session.exec(pending_stmt).all())
+
+        if not pending_tasks:
+            raise HTTPException(
+                status_code=400,
+                detail="No pending tasks to resume - run is already complete"
+            )
+
+        # Get credentials
+        email = os.environ.get("OO_EMAIL")
+        password = os.environ.get("OO_PASSWORD")
+        if not email or not password:
+            raise HTTPException(status_code=500, detail="Missing credentials")
+
+        num_browsers = int(os.environ.get("OO_MAX_BROWSERS", "2"))
+        headless = os.environ.get("OO_HEADLESS", "false").lower() == "true"
+
+        run_id_copy = run.id
+        pending_count = len(pending_tasks)
+
+    finally:
+        session.close()
+
+    # Start execution in background
+    import traceback
+
+    async def run_executor():
+        try:
+            await start_run_execution(
+                run_id_copy,
+                email,
+                password,
+                num_browsers=num_browsers,
+                headless=headless,
+                update_callback=notify_run_update,
+            )
+        except Exception as e:
+            print(f"Execution error for run {run_id_copy}: {e}")
+            traceback.print_exc()
+
+    background_tasks.add_task(run_executor)
+
+    return {
+        "run_id": run_id_copy,
+        "pending_tasks": pending_count,
+        "status": "resuming",
+        "message": f"Resuming run #{run_id_copy} with {pending_count} pending tasks"
+    }
 
 
 @router.get("/results/{result_id}/artifacts/{artifact_type}")

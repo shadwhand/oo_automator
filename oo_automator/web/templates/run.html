@@ -7,9 +7,15 @@
     <a href="/" class="back-link">&larr; Back to Dashboard</a>
     <div style="display: flex; justify-content: space-between; align-items: center;">
         <h1>Run #{{ run_id }}</h1>
-        <div id="run-actions">
+        <div id="run-actions" class="run-actions">
+            <button id="pause-btn" class="btn btn-warning" onclick="pauseRun()" style="display: none;">
+                Pause
+            </button>
+            <button id="resume-btn" class="btn btn-success" onclick="resumeRun()" style="display: none;">
+                Resume
+            </button>
             <button id="stop-btn" class="btn btn-danger" onclick="stopRun()" style="display: none;">
-                Stop Run
+                Stop
             </button>
         </div>
     </div>
@@ -43,23 +49,143 @@
     </div>
 </section>
 
+<style>
+.run-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-warning {
+    background: #f59e0b;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.btn-warning:hover {
+    background: #d97706;
+}
+
+.btn-success {
+    background: #10b981;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.btn-success:hover {
+    background: #059669;
+}
+
+.btn-danger {
+    background: #ef4444;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.btn-danger:hover {
+    background: #dc2626;
+}
+
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+</style>
+
 <script>
 const runId = {{ run_id }};
 
-// Show/hide stop button based on run status
+// Show/hide buttons based on run status
+function updateButtons(status) {
+    const pauseBtn = document.getElementById('pause-btn');
+    const resumeBtn = document.getElementById('resume-btn');
+    const stopBtn = document.getElementById('stop-btn');
+
+    // Hide all buttons first
+    pauseBtn.style.display = 'none';
+    resumeBtn.style.display = 'none';
+    stopBtn.style.display = 'none';
+
+    // Show appropriate buttons based on status
+    if (status === 'running') {
+        pauseBtn.style.display = 'inline-block';
+        stopBtn.style.display = 'inline-block';
+    } else if (status === 'paused' || status === 'stopped' || status === 'failed') {
+        resumeBtn.style.display = 'inline-block';
+    }
+}
+
+// Listen for htmx updates
 document.body.addEventListener('htmx:afterSwap', function(e) {
     if (e.target.classList.contains('run-info')) {
         const statusBadge = e.target.querySelector('.status-badge');
-        const stopBtn = document.getElementById('stop-btn');
-        if (statusBadge && stopBtn) {
-            const isRunning = statusBadge.classList.contains('status-running');
-            stopBtn.style.display = isRunning ? 'inline-block' : 'none';
+        if (statusBadge) {
+            const status = statusBadge.textContent.trim().toLowerCase();
+            updateButtons(status);
         }
     }
 });
 
+async function pauseRun() {
+    const btn = document.getElementById('pause-btn');
+    btn.disabled = true;
+    btn.textContent = 'Pausing...';
+
+    try {
+        const response = await fetch(`/api/runs/${runId}/pause`, {
+            method: 'POST'
+        });
+        const data = await response.json();
+        if (response.ok) {
+            btn.textContent = 'Paused';
+            updateButtons('paused');
+        } else {
+            alert('Error: ' + (data.detail || 'Failed to pause run'));
+            btn.disabled = false;
+            btn.textContent = 'Pause';
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+        btn.disabled = false;
+        btn.textContent = 'Pause';
+    }
+}
+
+async function resumeRun() {
+    const btn = document.getElementById('resume-btn');
+    btn.disabled = true;
+    btn.textContent = 'Resuming...';
+
+    try {
+        const response = await fetch(`/api/runs/${runId}/resume`, {
+            method: 'POST'
+        });
+        const data = await response.json();
+        if (response.ok) {
+            btn.textContent = 'Resumed';
+            updateButtons('running');
+        } else {
+            alert('Error: ' + (data.detail || 'Failed to resume run'));
+            btn.disabled = false;
+            btn.textContent = 'Resume';
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+        btn.disabled = false;
+        btn.textContent = 'Resume';
+    }
+}
+
 async function stopRun() {
-    if (!confirm('Are you sure you want to stop this run?')) return;
+    if (!confirm('Are you sure you want to stop this run? You can resume later from pending tasks.')) return;
 
     const btn = document.getElementById('stop-btn');
     btn.disabled = true;
@@ -72,16 +198,16 @@ async function stopRun() {
         const data = await response.json();
         if (response.ok) {
             btn.textContent = 'Stopped';
-            btn.style.display = 'none';
+            updateButtons('stopped');
         } else {
             alert('Error: ' + (data.detail || 'Failed to stop run'));
             btn.disabled = false;
-            btn.textContent = 'Stop Run';
+            btn.textContent = 'Stop';
         }
     } catch (error) {
         alert('Error: ' + error.message);
         btn.disabled = false;
-        btn.textContent = 'Stop Run';
+        btn.textContent = 'Stop';
     }
 }
 </script>

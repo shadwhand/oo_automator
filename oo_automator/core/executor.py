@@ -67,6 +67,11 @@ class ExecutorTaskQueue:
         with self._lock:
             return len(self._heap) == 0
 
+    def size(self) -> int:
+        """Get queue size."""
+        with self._lock:
+            return len(self._heap)
+
     def get_stats(self) -> dict:
         """Get queue statistics."""
         with self._lock:
@@ -76,6 +81,11 @@ class ExecutorTaskQueue:
                 "completed": self._completed,
                 "failed": self._failed,
             }
+
+    def get_in_progress_tasks(self) -> set[int]:
+        """Get set of in-progress task IDs."""
+        with self._lock:
+            return self._in_progress.copy()
 
 
 class RunExecutor:
@@ -97,7 +107,10 @@ class RunExecutor:
         self.queue = ExecutorTaskQueue()
         self.workers: list[BrowserWorker] = []
         self._running = False
+        self._paused = False
         self._update_callback: Optional[callable] = None
+        self._worker_last_activity: dict[int, datetime] = {}
+        self._watchdog_task: Optional[asyncio.Task] = None
 
     def set_update_callback(self, callback: callable):
         """Set callback for status updates (e.g., WebSocket broadcast)."""
@@ -147,12 +160,78 @@ class RunExecutor:
         finally:
             session.close()
 
+    async def _restart_worker(self, worker_id: int) -> Optional[BrowserWorker]:
+        """Restart a crashed worker."""
+        logger.info(f"Restarting worker {worker_id}...")
+
+        # Close old worker if it exists
+        if worker_id < len(self.workers):
+            old_worker = self.workers[worker_id]
+            try:
+                await old_worker.__aexit__(None, None, None)
+            except Exception as e:
+                logger.error(f"Error closing old worker {worker_id}: {e}")
+
+        # Create new worker
+        try:
+            new_worker = BrowserWorker(
+                worker_id=worker_id,
+                email=self.email,
+                password=self.password,
+                test_url=self.test_url,
+                headless=self.headless,
+            )
+            await new_worker.__aenter__()
+            self.workers[worker_id] = new_worker
+            logger.info(f"Worker {worker_id} restarted successfully")
+            return new_worker
+        except Exception as e:
+            logger.error(f"Failed to restart worker {worker_id}: {e}")
+            return None
+
+    async def _watchdog_loop(self):
+        """Monitor workers and restart stuck ones."""
+        STUCK_THRESHOLD = 300  # 5 minutes without activity = stuck
+
+        while self._running and not self._paused:
+            try:
+                await asyncio.sleep(30)  # Check every 30 seconds
+
+                current_time = datetime.now()
+                for worker_id, last_activity in list(self._worker_last_activity.items()):
+                    elapsed = (current_time - last_activity).total_seconds()
+
+                    if elapsed > STUCK_THRESHOLD:
+                        logger.warning(f"Worker {worker_id} appears stuck ({elapsed:.0f}s idle)")
+
+                        # Check if there are pending tasks
+                        if not self.queue.empty():
+                            logger.info(f"Attempting to restart stuck worker {worker_id}")
+                            await self._restart_worker(worker_id)
+                            self._worker_last_activity[worker_id] = datetime.now()
+
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                logger.error(f"Watchdog error: {e}")
+
     async def _worker_loop(self, worker_id: int, worker: BrowserWorker):
         """Worker loop that processes tasks from queue."""
         logger.info(f"Worker {worker_id} starting")
+        self._worker_last_activity[worker_id] = datetime.now()
+        consecutive_failures = 0
+        MAX_CONSECUTIVE_FAILURES = 5
 
         while self._running:
+            # Check if paused
+            if self._paused:
+                await asyncio.sleep(1)
+                continue
+
             try:
+                # Update activity timestamp
+                self._worker_last_activity[worker_id] = datetime.now()
+
                 # Get next task (with timeout to allow shutdown check)
                 try:
                     task_id, params = await asyncio.wait_for(
@@ -232,6 +311,7 @@ class RunExecutor:
                         "result": result_data,
                         "cached": True,
                     })
+                    consecutive_failures = 0
                     continue
 
                 # Update task status to running
@@ -268,8 +348,10 @@ class RunExecutor:
                             "params": params,
                             "result": result.results,
                         })
+                        consecutive_failures = 0
                     else:
                         # Task failed
+                        consecutive_failures += 1
                         session = get_session(engine)
                         will_retry = False
                         try:
@@ -305,14 +387,35 @@ class RunExecutor:
                             "will_retry": will_retry,
                         })
 
+                        # Check if we need to restart the browser
+                        if consecutive_failures >= MAX_CONSECUTIVE_FAILURES:
+                            logger.warning(f"Worker {worker_id} has {consecutive_failures} consecutive failures, restarting browser...")
+                            new_worker = await self._restart_worker(worker_id)
+                            if new_worker:
+                                worker = new_worker
+                                consecutive_failures = 0
+
                 except Exception as e:
                     logger.error(f"Worker {worker_id} error on task {task_id}: {e}")
+                    consecutive_failures += 1
+
                     session = get_session(engine)
                     try:
                         update_task_status(session, task_id, "pending")
                         self.queue.requeue(task_id, params)
                     finally:
                         session.close()
+
+                    # Check for browser crash and restart
+                    if "browser" in str(e).lower() or "target closed" in str(e).lower():
+                        logger.warning(f"Browser crash detected for worker {worker_id}, restarting...")
+                        new_worker = await self._restart_worker(worker_id)
+                        if new_worker:
+                            worker = new_worker
+                            consecutive_failures = 0
+                        else:
+                            # Wait before retrying
+                            await asyncio.sleep(10)
 
             except Exception as e:
                 logger.error(f"Worker {worker_id} loop error: {e}")
@@ -345,6 +448,7 @@ class RunExecutor:
         })
 
         self._running = True
+        self._paused = False
 
         try:
             # Create browser workers
@@ -364,6 +468,9 @@ class RunExecutor:
                 for worker in self.workers:
                     await worker.__aenter__()
 
+                # Start watchdog
+                self._watchdog_task = tg.create_task(self._watchdog_loop())
+
                 # Start worker loops
                 worker_tasks = []
                 for i, worker in enumerate(self.workers):
@@ -372,6 +479,10 @@ class RunExecutor:
 
                 # Wait for queue to be empty
                 while self._running:
+                    if self._paused:
+                        await asyncio.sleep(1)
+                        continue
+
                     stats = self.queue.get_stats()
                     if stats["pending"] == 0 and stats["in_progress"] == 0:
                         logger.info("All tasks completed")
@@ -398,6 +509,10 @@ class RunExecutor:
         finally:
             self._running = False
 
+            # Cancel watchdog
+            if self._watchdog_task:
+                self._watchdog_task.cancel()
+
             # Cleanup workers
             for worker in self.workers:
                 try:
@@ -405,34 +520,48 @@ class RunExecutor:
                 except Exception as e:
                     logger.error(f"Error closing worker: {e}")
 
-        # Update run status to completed
-        session = get_session(engine)
-        try:
-            # Check if any tasks failed
-            task_stmt = select(Task).where(
-                Task.run_id == self.run_id,
-                Task.status == "failed"
-            )
-            failed_tasks = list(session.exec(task_stmt).all())
+        # Update run status to completed (only if not paused)
+        if not self._paused:
+            session = get_session(engine)
+            try:
+                # Check if any tasks failed
+                task_stmt = select(Task).where(
+                    Task.run_id == self.run_id,
+                    Task.status == "failed"
+                )
+                failed_tasks = list(session.exec(task_stmt).all())
 
-            if failed_tasks:
-                update_run_status(session, self.run_id, "completed")  # Completed with some failures
-            else:
-                update_run_status(session, self.run_id, "completed")
-        finally:
-            session.close()
+                if failed_tasks:
+                    update_run_status(session, self.run_id, "completed")  # Completed with some failures
+                else:
+                    update_run_status(session, self.run_id, "completed")
+            finally:
+                session.close()
 
-        await self._notify_update({
-            "type": "run_completed",
-            "run_id": self.run_id,
-            "stats": self.queue.get_stats(),
-        })
+            await self._notify_update({
+                "type": "run_completed",
+                "run_id": self.run_id,
+                "stats": self.queue.get_stats(),
+            })
 
         logger.info(f"Run {self.run_id} execution completed")
 
     def stop(self):
         """Stop execution."""
         self._running = False
+
+    def pause(self):
+        """Pause execution (keeps workers alive but stops processing)."""
+        self._paused = True
+        logger.info(f"Run {self.run_id} paused")
+
+    def is_paused(self) -> bool:
+        """Check if executor is paused."""
+        return self._paused
+
+    def is_running(self) -> bool:
+        """Check if executor is running."""
+        return self._running
 
 
 # Global registry of running executors
@@ -480,3 +609,18 @@ def stop_run_execution(run_id: int):
     executor = _active_executors.get(run_id)
     if executor:
         executor.stop()
+
+
+def pause_run_execution(run_id: int) -> bool:
+    """Pause a running execution."""
+    executor = _active_executors.get(run_id)
+    if executor:
+        executor.pause()
+        return True
+    return False
+
+
+def is_run_paused(run_id: int) -> bool:
+    """Check if a run is paused."""
+    executor = _active_executors.get(run_id)
+    return executor.is_paused() if executor else False
