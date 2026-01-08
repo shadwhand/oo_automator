@@ -108,6 +108,7 @@ class RunExecutor:
         self.workers: list[BrowserWorker] = []
         self._running = False
         self._paused = False
+        self._skip_cache = False  # Set to True for refresh runs
         self._update_callback: Optional[callable] = None
         self._worker_last_activity: dict[int, datetime] = {}
         self._watchdog_task: Optional[asyncio.Task] = None
@@ -141,6 +142,11 @@ class RunExecutor:
             test_stmt = select(Test).where(Test.id == run.test_id)
             test = session.exec(test_stmt).first()
             self.test_url = test.url
+
+            # Check if this run should skip cache (for refresh runs)
+            self._skip_cache = run.config.get("skip_cache", False)
+            if self._skip_cache:
+                logger.info(f"Run {self.run_id} will skip cache (refresh mode)")
 
             # Load pending tasks
             task_stmt = select(Task).where(
@@ -248,20 +254,22 @@ class RunExecutor:
 
                 logger.info(f"Worker {worker_id} processing task {task_id}: {params}")
 
-                # Check for cached result before running
+                # Check for cached result before running (unless skip_cache is set)
                 engine = get_engine()
-                session = get_session(engine)
                 cached_result = None
-                try:
-                    # Check cache for each parameter in the combination
-                    for param_name, param_value in params.items():
-                        cached_result = get_cached_result(
-                            session, self.test_url, param_name, str(param_value)
-                        )
-                        if cached_result:
-                            break
-                finally:
-                    session.close()
+
+                if not self._skip_cache:
+                    session = get_session(engine)
+                    try:
+                        # Check cache for each parameter in the combination
+                        for param_name, param_value in params.items():
+                            cached_result = get_cached_result(
+                                session, self.test_url, param_name, str(param_value)
+                            )
+                            if cached_result:
+                                break
+                    finally:
+                        session.close()
 
                 if cached_result:
                     # Use cached result instead of running backtest

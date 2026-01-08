@@ -8,6 +8,9 @@
     <div style="display: flex; justify-content: space-between; align-items: center;">
         <h1>Run #{{ run_id }}</h1>
         <div id="run-actions" class="run-actions">
+            <button id="refresh-btn" class="btn btn-info" onclick="refreshRun()" title="Re-run with fresh data (bypasses cache)">
+                Refresh
+            </button>
             <button id="pause-btn" class="btn btn-warning" onclick="pauseRun()" style="display: none;">
                 Pause
             </button>
@@ -53,6 +56,19 @@
 .run-actions {
     display: flex;
     gap: 8px;
+}
+
+.btn-info {
+    background: #3b82f6;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.btn-info:hover {
+    background: #2563eb;
 }
 
 .btn-warning {
@@ -208,6 +224,34 @@ async function stopRun() {
         alert('Error: ' + error.message);
         btn.disabled = false;
         btn.textContent = 'Stop';
+    }
+}
+
+async function refreshRun() {
+    if (!confirm('This will create a new run with the same configuration and fresh data (bypasses cache). Continue?')) return;
+
+    const btn = document.getElementById('refresh-btn');
+    btn.disabled = true;
+    btn.textContent = 'Starting...';
+
+    try {
+        const response = await fetch(`/api/runs/${runId}/rerun`, {
+            method: 'POST'
+        });
+        const data = await response.json();
+        if (response.ok) {
+            // Redirect to new run
+            alert(`Refresh started as Run #${data.run_id}`);
+            window.location.href = `/runs/${data.run_id}`;
+        } else {
+            alert('Error: ' + (data.detail || 'Failed to start refresh'));
+            btn.disabled = false;
+            btn.textContent = 'Refresh';
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+        btn.disabled = false;
+        btn.textContent = 'Refresh';
     }
 }
 </script>

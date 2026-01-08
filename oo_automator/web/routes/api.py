@@ -387,6 +387,84 @@ async def stop_run(run_id: int):
     return {"status": "stopped", "message": f"Run #{run_id} stopped"}
 
 
+@router.post("/runs/{run_id}/rerun")
+async def rerun(run_id: int, background_tasks: BackgroundTasks):
+    """Create a new run with the same configuration - refreshes all data (bypasses cache)."""
+    import os
+    engine = get_engine()
+    session = get_session(engine)
+
+    try:
+        # Get the original run
+        statement = select(Run).where(Run.id == run_id)
+        original_run = session.exec(statement).first()
+        if not original_run:
+            raise HTTPException(status_code=404, detail="Run not found")
+
+        # Get credentials
+        email = os.environ.get("OO_EMAIL")
+        password = os.environ.get("OO_PASSWORD")
+        if not email or not password:
+            raise HTTPException(status_code=500, detail="Missing credentials")
+
+        num_browsers = int(os.environ.get("OO_MAX_BROWSERS", "2"))
+        headless = os.environ.get("OO_HEADLESS", "false").lower() == "true"
+
+        # Create new config with skip_cache flag to force fresh data
+        new_config = {**original_run.config, "skip_cache": True}
+
+        # Create new run with updated config
+        new_run = create_run(session, original_run.test_id, original_run.mode, new_config)
+
+        # Update test run count
+        increment_test_run_count(session, original_run.test_id)
+
+        # Generate task combinations from config
+        combinations = generate_combinations(original_run.config)
+
+        # Create tasks
+        create_tasks_for_run(session, new_run.id, combinations)
+
+        new_run_id = new_run.id
+        test_id = original_run.test_id
+        total_tasks = len(combinations)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    finally:
+        session.close()
+
+    # Start execution in background
+    import traceback
+
+    async def run_executor():
+        try:
+            await start_run_execution(
+                new_run_id,
+                email,
+                password,
+                num_browsers=num_browsers,
+                headless=headless,
+                update_callback=notify_run_update,
+            )
+        except Exception as e:
+            print(f"Execution error for run {new_run_id}: {e}")
+            traceback.print_exc()
+
+    background_tasks.add_task(run_executor)
+
+    return {
+        "run_id": new_run_id,
+        "original_run_id": run_id,
+        "test_id": test_id,
+        "total_tasks": total_tasks,
+        "status": "starting",
+        "message": f"Rerun started as Run #{new_run_id} with {total_tasks} tasks"
+    }
+
+
 @router.post("/runs/{run_id}/pause")
 async def pause_run(run_id: int):
     """Pause a running execution."""
