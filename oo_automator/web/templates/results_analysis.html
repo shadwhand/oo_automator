@@ -1,0 +1,300 @@
+{% extends "base.html" %}
+
+{% block title %}Results Analysis - Run #{{ run.id }} - OO Automator{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <a href="/runs/{{ run.id }}" class="back-link">&larr; Back to Run</a>
+    <h1>Results Analysis - Run #{{ run.id }}</h1>
+    <p class="subtitle">{{ test.name or test.url }}</p>
+</div>
+
+<div class="results-controls">
+    <div class="view-toggle">
+        <a href="/runs/{{ run.id }}/results" class="btn btn-primary">Basic View</a>
+        <a href="/runs/{{ run.id }}/advanced" class="btn btn-secondary">Advanced View</a>
+    </div>
+    <div class="export-buttons">
+        <button onclick="exportToCSV()" class="btn btn-secondary">Export CSV</button>
+    </div>
+</div>
+
+{% if results %}
+<div class="results-table-container">
+    <table class="heatmap-table" id="results-table">
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Value</th>
+                <th data-metric="cagr" data-higher-better="true">CAGR %</th>
+                <th data-metric="max_drawdown" data-higher-better="false">Max DD %</th>
+                <th data-metric="win_percentage" data-higher-better="true">Win %</th>
+                <th data-metric="capture_rate" data-higher-better="true">Capture %</th>
+                <th data-metric="mar" data-higher-better="true">MAR</th>
+                <th data-metric="profit_factor" data-higher-better="true">Profit Factor</th>
+                <th data-metric="expected_value" data-higher-better="true">Expected Value</th>
+                <th data-metric="cagr_to_mdd" data-higher-better="true">CAGR/MDD</th>
+                <th data-metric="loser_ratio" data-higher-better="false">Loser Ratio</th>
+                <th data-metric="recovery_ratio" data-higher-better="true">Recovery</th>
+                <th>Trades</th>
+                <th>Winners</th>
+                <th>Timestamp</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in results %}
+            <tr>
+                <td>{{ r.param_name }}</td>
+                <td class="param-value">{{ r.param_value }}</td>
+                <td data-value="{{ r.cagr }}">{{ "%.2f"|format(r.cagr) }}</td>
+                <td data-value="{{ r.max_drawdown }}">{{ "%.2f"|format(r.max_drawdown) }}</td>
+                <td data-value="{{ r.win_percentage }}">{{ "%.1f"|format(r.win_percentage) }}</td>
+                <td data-value="{{ r.capture_rate }}">{{ "%.2f"|format(r.capture_rate) }}</td>
+                <td data-value="{{ r.mar }}">{{ "%.2f"|format(r.mar) }}</td>
+                <td data-value="{{ r.profit_factor }}">{{ "%.4f"|format(r.profit_factor) }}</td>
+                <td data-value="{{ r.expected_value }}">{{ "%.2f"|format(r.expected_value) }}</td>
+                <td data-value="{{ r.cagr_to_mdd }}">{{ "%.2f"|format(r.cagr_to_mdd) }}</td>
+                <td data-value="{{ r.loser_ratio }}">{{ "%.4f"|format(r.loser_ratio) }}</td>
+                <td data-value="{{ r.recovery_ratio }}">{{ "%.2f"|format(r.recovery_ratio) }}</td>
+                <td>{{ r.total_trades }}</td>
+                <td>{{ r.winners }}</td>
+                <td class="timestamp">{{ r.created_at.strftime('%Y-%m-%d %H:%M') if r.created_at else '--' }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="legend">
+    <span class="legend-label">Performance:</span>
+    <span class="legend-item" style="background: #ef4444;">Worst</span>
+    <span class="legend-item" style="background: #f97316;">Poor</span>
+    <span class="legend-item" style="background: #eab308;">Average</span>
+    <span class="legend-item" style="background: #84cc16;">Good</span>
+    <span class="legend-item" style="background: #22c55e;">Best</span>
+</div>
+{% else %}
+<p class="empty-state">No results yet for this run.</p>
+{% endif %}
+
+<style>
+.page-header {
+    margin-bottom: 24px;
+}
+.subtitle {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-top: 4px;
+}
+.results-controls {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    gap: 16px;
+}
+.view-toggle {
+    display: flex;
+    gap: 8px;
+}
+.results-table-container {
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+}
+.heatmap-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    white-space: nowrap;
+}
+.heatmap-table th {
+    background: var(--surface);
+    padding: 12px 8px;
+    text-align: left;
+    font-weight: 600;
+    border-bottom: 2px solid var(--border);
+    position: sticky;
+    top: 0;
+    cursor: pointer;
+}
+.heatmap-table th:hover {
+    background: var(--bg);
+}
+.heatmap-table td {
+    padding: 10px 8px;
+    border-bottom: 1px solid var(--border);
+    text-align: right;
+}
+.heatmap-table td:first-child,
+.heatmap-table td:nth-child(2) {
+    text-align: left;
+    font-weight: 500;
+}
+.heatmap-table td.param-value {
+    font-family: monospace;
+}
+.heatmap-table td.timestamp {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+.heatmap-table tr:hover {
+    background: rgba(255,255,255,0.05);
+}
+
+/* Color scale for heatmap */
+.heatmap-cell {
+    color: #fff;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    font-weight: 500;
+}
+
+.legend {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 16px;
+    padding: 12px;
+    background: var(--surface);
+    border-radius: 6px;
+}
+.legend-label {
+    font-weight: 600;
+    margin-right: 8px;
+}
+.legend-item {
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    color: white;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    applyHeatmap();
+    setupSorting();
+});
+
+function applyHeatmap() {
+    const table = document.getElementById('results-table');
+    const headers = table.querySelectorAll('thead th');
+
+    headers.forEach((header, colIndex) => {
+        const metric = header.dataset.metric;
+        if (!metric) return;
+
+        const higherBetter = header.dataset.higherBetter === 'true';
+
+        // Get all values for this column
+        const cells = table.querySelectorAll(`tbody tr td:nth-child(${colIndex + 1})`);
+        const values = Array.from(cells).map(cell => parseFloat(cell.dataset.value) || 0);
+
+        if (values.length === 0) return;
+
+        const min = Math.min(...values);
+        const max = Math.max(...values);
+        const range = max - min || 1;
+
+        cells.forEach(cell => {
+            const value = parseFloat(cell.dataset.value) || 0;
+            let normalized = (value - min) / range; // 0 to 1
+
+            // Invert if lower is better
+            if (!higherBetter) {
+                normalized = 1 - normalized;
+            }
+
+            // Color scale: red -> orange -> yellow -> lime -> green
+            const color = getHeatmapColor(normalized);
+            cell.style.backgroundColor = color;
+            cell.classList.add('heatmap-cell');
+        });
+    });
+}
+
+function getHeatmapColor(value) {
+    // Smooth 100-point gradient from red -> yellow -> green
+    // value: 0 (worst) to 1 (best)
+    let r, g, b;
+
+    if (value < 0.5) {
+        // Red to Yellow (0 -> 0.5)
+        const t = value * 2; // 0 to 1
+        r = 220;
+        g = Math.round(60 + (180 * t)); // 60 -> 240
+        b = Math.round(60 * (1 - t)); // 60 -> 0
+    } else {
+        // Yellow to Green (0.5 -> 1)
+        const t = (value - 0.5) * 2; // 0 to 1
+        r = Math.round(220 - (180 * t)); // 220 -> 40
+        g = Math.round(240 - (40 * t)); // 240 -> 200
+        b = Math.round(80 * t); // 0 -> 80
+    }
+
+    return `rgb(${r}, ${g}, ${b})`;
+}
+
+function setupSorting() {
+    const table = document.getElementById('results-table');
+    const headers = table.querySelectorAll('thead th');
+
+    headers.forEach((header, colIndex) => {
+        header.addEventListener('click', () => sortTable(colIndex));
+    });
+}
+
+let sortDirection = {};
+
+function sortTable(colIndex) {
+    const table = document.getElementById('results-table');
+    const tbody = table.querySelector('tbody');
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+
+    // Toggle sort direction
+    sortDirection[colIndex] = !sortDirection[colIndex];
+    const ascending = sortDirection[colIndex];
+
+    rows.sort((a, b) => {
+        const aCell = a.cells[colIndex];
+        const bCell = b.cells[colIndex];
+
+        let aVal = aCell.dataset.value !== undefined ? parseFloat(aCell.dataset.value) : aCell.textContent;
+        let bVal = bCell.dataset.value !== undefined ? parseFloat(bCell.dataset.value) : bCell.textContent;
+
+        if (typeof aVal === 'number' && typeof bVal === 'number') {
+            return ascending ? aVal - bVal : bVal - aVal;
+        }
+        return ascending ? String(aVal).localeCompare(String(bVal)) : String(bVal).localeCompare(String(aVal));
+    });
+
+    rows.forEach(row => tbody.appendChild(row));
+}
+
+function exportToCSV() {
+    const table = document.getElementById('results-table');
+    const headers = Array.from(table.querySelectorAll('thead th')).map(th => th.textContent);
+    const rows = Array.from(table.querySelectorAll('tbody tr'));
+
+    let csv = headers.join(',') + '\n';
+
+    rows.forEach(row => {
+        const cells = Array.from(row.cells).map(cell => {
+            const value = cell.dataset.value !== undefined ? cell.dataset.value : cell.textContent;
+            // Escape commas and quotes
+            return `"${value.replace(/"/g, '""')}"`;
+        });
+        csv += cells.join(',') + '\n';
+    });
+
+    // Download
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'run_{{ run.id }}_results.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+}
+</script>
+{% endblock %}

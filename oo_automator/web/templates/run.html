@@ -5,7 +5,14 @@
 {% block content %}
 <div class="run-header">
     <a href="/" class="back-link">&larr; Back to Dashboard</a>
-    <h1>Run #{{ run_id }}</h1>
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h1>Run #{{ run_id }}</h1>
+        <div id="run-actions">
+            <button id="stop-btn" class="btn btn-danger" onclick="stopRun()" style="display: none;">
+                Stop Run
+            </button>
+        </div>
+    </div>
 </div>
 
 <section class="run-info"
@@ -25,11 +32,57 @@
 </section>
 
 <section class="results-section">
-    <h2>Results</h2>
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h2>Results</h2>
+        <a href="/runs/{{ run_id }}/results" class="btn btn-secondary">View Analysis</a>
+    </div>
     <div hx-get="/api/runs/{{ run_id }}/results"
          hx-trigger="load, every 5s"
          hx-headers='{"Accept": "text/html"}'>
         <p class="loading">Loading results...</p>
     </div>
 </section>
+
+<script>
+const runId = {{ run_id }};
+
+// Show/hide stop button based on run status
+document.body.addEventListener('htmx:afterSwap', function(e) {
+    if (e.target.classList.contains('run-info')) {
+        const statusBadge = e.target.querySelector('.status-badge');
+        const stopBtn = document.getElementById('stop-btn');
+        if (statusBadge && stopBtn) {
+            const isRunning = statusBadge.classList.contains('status-running');
+            stopBtn.style.display = isRunning ? 'inline-block' : 'none';
+        }
+    }
+});
+
+async function stopRun() {
+    if (!confirm('Are you sure you want to stop this run?')) return;
+
+    const btn = document.getElementById('stop-btn');
+    btn.disabled = true;
+    btn.textContent = 'Stopping...';
+
+    try {
+        const response = await fetch(`/api/runs/${runId}/stop`, {
+            method: 'POST'
+        });
+        const data = await response.json();
+        if (response.ok) {
+            btn.textContent = 'Stopped';
+            btn.style.display = 'none';
+        } else {
+            alert('Error: ' + (data.detail || 'Failed to stop run'));
+            btn.disabled = false;
+            btn.textContent = 'Stop Run';
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+        btn.disabled = false;
+        btn.textContent = 'Stop Run';
+    }
+}
+</script>
 {% endblock %}

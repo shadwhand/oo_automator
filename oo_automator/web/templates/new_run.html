@@ -14,12 +14,14 @@
         <div class="form-group">
             <label for="test-url">OptionOmega Test URL</label>
             <input type="url" id="test-url" name="url"
-                   placeholder="https://app.optionomega.com/tests/..." required>
+                   placeholder="https://optionomega.com/test/..." required
+                   value="{{ prefill.url if prefill else '' }}">
         </div>
         <div class="form-group">
             <label for="test-name">Test Name (optional)</label>
             <input type="text" id="test-name" name="name"
-                   placeholder="My Strategy Test">
+                   placeholder="My Strategy Test"
+                   value="{{ prefill.name if prefill else '' }}">
         </div>
     </section>
 
@@ -27,14 +29,14 @@
         <h2>2. Test Mode</h2>
         <div class="mode-options">
             <label class="mode-option">
-                <input type="radio" name="mode" value="sweep" checked>
+                <input type="radio" name="mode" value="sweep" {{ 'checked' if not prefill or prefill.mode == 'sweep' else '' }}>
                 <div class="mode-card">
                     <strong>Sweep</strong>
                     <span>Test one parameter across a range</span>
                 </div>
             </label>
             <label class="mode-option">
-                <input type="radio" name="mode" value="grid">
+                <input type="radio" name="mode" value="grid" {{ 'checked' if prefill and prefill.mode == 'grid' else '' }}>
                 <div class="mode-card">
                     <strong>Grid Search</strong>
                     <span>Test multiple parameters (all combinations)</span>
@@ -47,25 +49,85 @@
         <h2>3. Parameters</h2>
         <div id="parameters-list">
             {% for param in parameters %}
+            {% set is_selected = prefill and param.name in prefill.selected_params %}
+            {% set pv = prefill.param_values.get(param.name, {}) if prefill else {} %}
             <div class="param-config" data-param="{{ param.name }}">
                 <label class="param-checkbox">
-                    <input type="checkbox" name="params" value="{{ param.name }}">
+                    <input type="checkbox" name="params" value="{{ param.name }}" {{ 'checked' if is_selected else '' }}>
                     <strong>{{ param.display_name }}</strong>
                     <span class="param-desc">{{ param.description }}</span>
                 </label>
-                <div class="param-fields" style="display: none;">
+                <div class="param-fields" style="display: {{ 'flex' if is_selected else 'none' }};">
+                    {% if param.name == 'entry_time' %}
+                    <div class="param-hint">Military time: 930 = 9:30am, 1500 = 3:00pm, 1600 = 4:00pm</div>
                     <div class="param-field">
                         <label>Start</label>
-                        <input type="number" name="{{ param.name }}_start" value="5">
+                        <input type="number" name="{{ param.name }}_start" value="{{ pv.start if pv.start else 930 }}" placeholder="930">
                     </div>
                     <div class="param-field">
                         <label>End</label>
-                        <input type="number" name="{{ param.name }}_end" value="25">
+                        <input type="number" name="{{ param.name }}_end" value="{{ pv.end if pv.end else 1500 }}" placeholder="1500">
+                    </div>
+                    <div class="param-field">
+                        <label>Step (minutes)</label>
+                        <input type="number" name="{{ param.name }}_step" value="{{ pv.step if pv.step else 30 }}" placeholder="30">
+                    </div>
+                    {% elif param.name == 'delta' %}
+                    <div class="param-hint">Delta values (negative for puts, e.g., -5 to -50)</div>
+                    <div class="param-field">
+                        <label>Start</label>
+                        <input type="number" name="{{ param.name }}_start" value="{{ pv.start if pv.start is defined else -10 }}">
+                    </div>
+                    <div class="param-field">
+                        <label>End</label>
+                        <input type="number" name="{{ param.name }}_end" value="{{ pv.end if pv.end is defined else -30 }}">
                     </div>
                     <div class="param-field">
                         <label>Step</label>
-                        <input type="number" name="{{ param.name }}_step" value="5">
+                        <input type="number" name="{{ param.name }}_step" value="{{ pv.step if pv.step is defined else -5 }}">
                     </div>
+                    {% elif param.name == 'profit_target' %}
+                    <div class="param-hint">Profit target percentage (e.g., 25 = 25%)</div>
+                    <div class="param-field">
+                        <label>Start (%)</label>
+                        <input type="number" name="{{ param.name }}_start" value="{{ pv.start if pv.start is defined else 10 }}">
+                    </div>
+                    <div class="param-field">
+                        <label>End (%)</label>
+                        <input type="number" name="{{ param.name }}_end" value="{{ pv.end if pv.end is defined else 50 }}">
+                    </div>
+                    <div class="param-field">
+                        <label>Step</label>
+                        <input type="number" name="{{ param.name }}_step" value="{{ pv.step if pv.step is defined else 10 }}">
+                    </div>
+                    {% elif param.name == 'stop_loss' %}
+                    <div class="param-hint">Stop loss percentage (e.g., 50 = 50%)</div>
+                    <div class="param-field">
+                        <label>Start (%)</label>
+                        <input type="number" name="{{ param.name }}_start" value="{{ pv.start if pv.start is defined else 25 }}">
+                    </div>
+                    <div class="param-field">
+                        <label>End (%)</label>
+                        <input type="number" name="{{ param.name }}_end" value="{{ pv.end if pv.end is defined else 100 }}">
+                    </div>
+                    <div class="param-field">
+                        <label>Step</label>
+                        <input type="number" name="{{ param.name }}_step" value="{{ pv.step if pv.step is defined else 25 }}">
+                    </div>
+                    {% else %}
+                    <div class="param-field">
+                        <label>Start</label>
+                        <input type="number" name="{{ param.name }}_start" value="{{ pv.start if pv.start is defined else 5 }}">
+                    </div>
+                    <div class="param-field">
+                        <label>End</label>
+                        <input type="number" name="{{ param.name }}_end" value="{{ pv.end if pv.end is defined else 25 }}">
+                    </div>
+                    <div class="param-field">
+                        <label>Step</label>
+                        <input type="number" name="{{ param.name }}_step" value="{{ pv.step if pv.step is defined else 5 }}">
+                    </div>
+                    {% endif %}
                 </div>
             </div>
             {% endfor %}
@@ -81,8 +143,14 @@
         </div>
         <div class="form-group">
             <label for="password">Password</label>
-            <input type="password" id="password" name="password" required>
+            <input type="password" id="password" name="password" required
+                   value="{{ config_password or '' }}">
         </div>
+        {% if config_email and config_password %}
+        <p style="color: var(--text-secondary); font-size: 0.875rem;">
+            Credentials loaded from .env file
+        </p>
+        {% endif %}
     </section>
 
     <section class="form-section">
@@ -90,13 +158,13 @@
         <div class="form-group">
             <label for="browsers">Concurrent Browsers</label>
             <select id="browsers" name="browsers">
-                <option value="1">1 browser</option>
-                <option value="2" selected>2 browsers</option>
+                <option value="1" {{ 'selected' if prefill and prefill.browsers == 1 else '' }}>1 browser</option>
+                <option value="2" {{ 'selected' if not prefill or prefill.browsers == 2 else '' }}>2 browsers</option>
             </select>
         </div>
         <div class="form-group">
             <label class="checkbox-label">
-                <input type="checkbox" name="headless" id="headless">
+                <input type="checkbox" name="headless" id="headless" {{ 'checked' if prefill and prefill.headless else '' }}>
                 Run headless (no visible browser windows)
             </label>
         </div>

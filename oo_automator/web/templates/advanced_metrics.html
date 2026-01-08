@@ -1,0 +1,354 @@
+{% extends "base.html" %}
+
+{% block title %}Advanced Metrics - Run #{{ run.id }} - OO Automator{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <a href="/runs/{{ run.id }}" class="back-link">&larr; Back to Run</a>
+    <h1>Advanced Metrics - Run #{{ run.id }}</h1>
+    <p class="subtitle">{{ test.name or test.url }}</p>
+</div>
+
+<div class="results-controls">
+    <div class="view-toggle">
+        <a href="/runs/{{ run.id }}/results" class="btn btn-secondary">Basic View</a>
+        <a href="/runs/{{ run.id }}/advanced" class="btn btn-primary">Advanced View</a>
+    </div>
+    <div class="export-buttons">
+        <button onclick="exportToCSV()" class="btn btn-secondary">Export CSV</button>
+    </div>
+</div>
+
+{% if results %}
+<div class="results-table-container">
+    <table class="heatmap-table" id="results-table">
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Value</th>
+                <th data-metric="cagr" data-higher-better="true">CAGR %</th>
+                <th data-metric="max_drawdown" data-higher-better="false">Max DD %</th>
+                <th data-metric="win_percentage" data-higher-better="true">Win %</th>
+                <th data-metric="capture_rate" data-higher-better="true">Capture</th>
+                <th data-metric="mar" data-higher-better="true">MAR</th>
+                <th data-metric="profit_factor" data-higher-better="true">Profit Factor</th>
+                <th data-metric="expected_value" data-higher-better="true">Expected Value</th>
+                <th data-metric="expectancy" data-higher-better="true">Expectancy</th>
+                <th data-metric="cagr_to_mdd" data-higher-better="true">CAGR/MDD</th>
+                <th data-metric="loser_ratio_pct" data-higher-better="false">Loser %</th>
+                <th data-metric="recovery_ratio" data-higher-better="true">Recovery</th>
+                <th data-metric="sharpe" data-higher-better="true">Sharpe</th>
+                <th data-metric="sortino" data-higher-better="true">Sortino</th>
+                <th data-metric="kelly" data-higher-better="true">Kelly %</th>
+                <th data-metric="calmar" data-higher-better="true">CalMAR</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in results %}
+            <tr>
+                <td>{{ r.param_name }}</td>
+                <td class="param-value">{{ r.param_value }}</td>
+                <td data-value="{{ r.cagr }}">{{ "%.2f"|format(r.cagr) }}%</td>
+                <td data-value="{{ r.max_drawdown }}">{{ "%.2f"|format(r.max_drawdown) }}%</td>
+                <td data-value="{{ r.win_percentage }}">{{ "%.1f"|format(r.win_percentage) }}</td>
+                <td data-value="{{ r.capture_rate }}">{{ "%.3f"|format(r.capture_rate) }}</td>
+                <td data-value="{{ r.mar }}">{{ "%.4f"|format(r.mar) }}</td>
+                <td data-value="{{ r.profit_factor }}">{{ "%.4f"|format(r.profit_factor) }}</td>
+                <td data-value="{{ r.expected_value }}">{{ "%.2f"|format(r.expected_value) }}</td>
+                <td data-value="{{ r.expectancy }}">{{ "%.2f"|format(r.expectancy) }}</td>
+                <td data-value="{{ r.cagr_to_mdd }}">{{ "%.4f"|format(r.cagr_to_mdd) }}</td>
+                <td data-value="{{ r.loser_ratio_pct }}">{{ "%.2f"|format(r.loser_ratio_pct) }}</td>
+                <td data-value="{{ r.recovery_ratio }}">{{ "%.4f"|format(r.recovery_ratio) }}</td>
+                <td data-value="{{ r.sharpe }}">{{ "%.4f"|format(r.sharpe) }}</td>
+                <td data-value="{{ r.sortino }}">{{ "%.4f"|format(r.sortino) }}</td>
+                <td data-value="{{ r.kelly }}">{{ "%.1f"|format(r.kelly) }}</td>
+                <td data-value="{{ r.calmar }}">{{ "%.4f"|format(r.calmar) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="legend">
+    <span class="legend-label">Performance:</span>
+    <span class="legend-item" style="background: #ef4444;">Worst</span>
+    <span class="legend-item" style="background: #f97316;">Poor</span>
+    <span class="legend-item" style="background: #eab308;">Average</span>
+    <span class="legend-item" style="background: #84cc16;">Good</span>
+    <span class="legend-item" style="background: #22c55e;">Best</span>
+</div>
+
+<div class="metrics-explanation">
+    <h3>Metric Definitions</h3>
+    <div class="metrics-grid">
+        <div class="metric-item"><span class="metric-name">CAGR</span><span class="metric-desc">Compound Annual Growth Rate - annualized return</span></div>
+        <div class="metric-item"><span class="metric-name">Max DD</span><span class="metric-desc">Maximum Drawdown - largest peak-to-trough decline</span></div>
+        <div class="metric-item"><span class="metric-name">Win %</span><span class="metric-desc">Percentage of winning trades</span></div>
+        <div class="metric-item"><span class="metric-name">Capture</span><span class="metric-desc">Capture Rate - premium captured</span></div>
+        <div class="metric-item"><span class="metric-name">MAR</span><span class="metric-desc">CAGR / Max Drawdown ratio</span></div>
+        <div class="metric-item"><span class="metric-name">Profit Factor</span><span class="metric-desc">(Avg Winner x Win Rate) / (Avg Loser x Loss Rate)</span></div>
+        <div class="metric-item"><span class="metric-name">Expected Value</span><span class="metric-desc">Average expected profit per trade</span></div>
+        <div class="metric-item"><span class="metric-name">Expectancy</span><span class="metric-desc">Same as Expected Value</span></div>
+        <div class="metric-item"><span class="metric-name">CAGR/MDD</span><span class="metric-desc">Return per unit of drawdown risk</span></div>
+        <div class="metric-item"><span class="metric-name">Loser %</span><span class="metric-desc">Percentage of losing trades (1 - Win%)</span></div>
+        <div class="metric-item"><span class="metric-name">Recovery</span><span class="metric-desc">Recovery Ratio - ability to recover from drawdown</span></div>
+        <div class="metric-item"><span class="metric-name">Sharpe</span><span class="metric-desc">Risk-adjusted return (return / volatility)</span></div>
+        <div class="metric-item"><span class="metric-name">Sortino</span><span class="metric-desc">Downside risk-adjusted return (return / downside vol)</span></div>
+        <div class="metric-item"><span class="metric-name">Kelly %</span><span class="metric-desc">Kelly Criterion - optimal position size percentage</span></div>
+        <div class="metric-item"><span class="metric-name">CalMAR</span><span class="metric-desc">Calmar Ratio - CAGR / Max Drawdown</span></div>
+    </div>
+</div>
+{% else %}
+<p class="empty-state">No results yet for this run.</p>
+{% endif %}
+
+<style>
+.page-header {
+    margin-bottom: 24px;
+}
+.subtitle {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-top: 4px;
+}
+.results-controls {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    gap: 16px;
+}
+.view-toggle {
+    display: flex;
+    gap: 8px;
+}
+.results-table-container {
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+}
+.heatmap-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+    white-space: nowrap;
+}
+.heatmap-table th {
+    background: var(--surface);
+    padding: 10px 6px;
+    text-align: left;
+    font-weight: 600;
+    border-bottom: 2px solid var(--border);
+    position: sticky;
+    top: 0;
+    cursor: pointer;
+    font-size: 0.75rem;
+}
+.heatmap-table th:hover {
+    background: var(--bg);
+}
+.heatmap-table td {
+    padding: 8px 6px;
+    border-bottom: 1px solid var(--border);
+    text-align: right;
+    font-family: 'SF Mono', 'Monaco', monospace;
+    font-size: 0.75rem;
+}
+.heatmap-table td:first-child,
+.heatmap-table td:nth-child(2) {
+    text-align: left;
+    font-weight: 500;
+    font-family: inherit;
+}
+.heatmap-table td.param-value {
+    font-family: monospace;
+}
+.heatmap-table tr:hover {
+    background: rgba(255,255,255,0.05);
+}
+
+.heatmap-cell {
+    color: #fff;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+    font-weight: 600;
+}
+
+.legend {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 16px;
+    padding: 12px;
+    background: var(--surface);
+    border-radius: 6px;
+}
+.legend-label {
+    font-weight: 600;
+    margin-right: 8px;
+}
+.legend-item {
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    color: white;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+
+.metrics-explanation {
+    margin-top: 24px;
+    padding: 20px;
+    background: var(--surface);
+    border-radius: 8px;
+}
+.metrics-explanation h3 {
+    margin-bottom: 16px;
+    font-size: 1rem;
+}
+.metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 10px 24px;
+}
+.metric-item {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    padding: 4px 0;
+    border-bottom: 1px solid var(--border);
+}
+.metric-name {
+    font-weight: 600;
+    color: var(--primary);
+    min-width: 100px;
+    flex-shrink: 0;
+}
+.metric-name::after {
+    content: ":";
+}
+.metric-desc {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    applyHeatmap();
+    setupSorting();
+});
+
+function applyHeatmap() {
+    const table = document.getElementById('results-table');
+    const headers = table.querySelectorAll('thead th');
+
+    headers.forEach((header, colIndex) => {
+        const metric = header.dataset.metric;
+        if (!metric) return;
+
+        const higherBetter = header.dataset.higherBetter === 'true';
+
+        const cells = table.querySelectorAll(`tbody tr td:nth-child(${colIndex + 1})`);
+        const values = Array.from(cells).map(cell => parseFloat(cell.dataset.value) || 0);
+
+        if (values.length === 0) return;
+
+        const min = Math.min(...values);
+        const max = Math.max(...values);
+        const range = max - min || 1;
+
+        cells.forEach(cell => {
+            const value = parseFloat(cell.dataset.value) || 0;
+            let normalized = (value - min) / range;
+
+            if (!higherBetter) {
+                normalized = 1 - normalized;
+            }
+
+            const color = getHeatmapColor(normalized);
+            cell.style.backgroundColor = color;
+            cell.classList.add('heatmap-cell');
+        });
+    });
+}
+
+function getHeatmapColor(value) {
+    // Smooth 100-point gradient from red -> yellow -> green
+    // value: 0 (worst) to 1 (best)
+    let r, g, b;
+
+    if (value < 0.5) {
+        // Red to Yellow (0 -> 0.5)
+        const t = value * 2; // 0 to 1
+        r = 220;
+        g = Math.round(60 + (180 * t)); // 60 -> 240
+        b = Math.round(60 * (1 - t)); // 60 -> 0
+    } else {
+        // Yellow to Green (0.5 -> 1)
+        const t = (value - 0.5) * 2; // 0 to 1
+        r = Math.round(220 - (180 * t)); // 220 -> 40
+        g = Math.round(240 - (40 * t)); // 240 -> 200
+        b = Math.round(80 * t); // 0 -> 80
+    }
+
+    return `rgb(${r}, ${g}, ${b})`;
+}
+
+function setupSorting() {
+    const table = document.getElementById('results-table');
+    const headers = table.querySelectorAll('thead th');
+
+    headers.forEach((header, colIndex) => {
+        header.addEventListener('click', () => sortTable(colIndex));
+    });
+}
+
+let sortDirection = {};
+
+function sortTable(colIndex) {
+    const table = document.getElementById('results-table');
+    const tbody = table.querySelector('tbody');
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+
+    sortDirection[colIndex] = !sortDirection[colIndex];
+    const ascending = sortDirection[colIndex];
+
+    rows.sort((a, b) => {
+        const aCell = a.cells[colIndex];
+        const bCell = b.cells[colIndex];
+
+        let aVal = aCell.dataset.value !== undefined ? parseFloat(aCell.dataset.value) : aCell.textContent;
+        let bVal = bCell.dataset.value !== undefined ? parseFloat(bCell.dataset.value) : bCell.textContent;
+
+        if (typeof aVal === 'number' && typeof bVal === 'number') {
+            return ascending ? aVal - bVal : bVal - aVal;
+        }
+        return ascending ? String(aVal).localeCompare(String(bVal)) : String(bVal).localeCompare(String(aVal));
+    });
+
+    rows.forEach(row => tbody.appendChild(row));
+}
+
+function exportToCSV() {
+    const table = document.getElementById('results-table');
+    const headers = Array.from(table.querySelectorAll('thead th')).map(th => th.textContent);
+    const rows = Array.from(table.querySelectorAll('tbody tr'));
+
+    let csv = headers.join(',') + '\n';
+
+    rows.forEach(row => {
+        const cells = Array.from(row.cells).map(cell => {
+            const value = cell.dataset.value !== undefined ? cell.dataset.value : cell.textContent.replace('%', '');
+            return `"${value.replace(/"/g, '""')}"`;
+        });
+        csv += cells.join(',') + '\n';
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `run_{{ run.id }}_advanced_metrics.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+</script>
+{% endblock %}

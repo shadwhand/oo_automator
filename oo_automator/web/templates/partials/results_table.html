@@ -9,11 +9,12 @@
             <th>Win %</th>
             <th>MAR</th>
             <th>Trades</th>
+            <th>Artifacts</th>
         </tr>
     </thead>
     <tbody>
         {% for result in results %}
-        <tr class="result-row">
+        <tr class="result-row" onclick="showResultDetails({{ result.id }}, {{ result.task_id }})" style="cursor: pointer;">
             <td>{{ result.task_id }}</td>
             <td class="{% if result.pl and result.pl > 0 %}positive{% elif result.pl and result.pl < 0 %}negative{% endif %}">
                 {% if result.pl is not none %}${{ "%.2f"|format(result.pl) }}{% else %}--{% endif %}
@@ -33,6 +34,20 @@
             <td>
                 {% if result.total_trades is not none %}{{ result.total_trades }}{% else %}--{% endif %}
             </td>
+            <td class="artifacts-cell">
+                {% if result.chart_path %}
+                <a href="/api/results/{{ result.id }}/artifacts/chart" target="_blank" title="View Chart">📊</a>
+                {% endif %}
+                {% if result.results_screenshot %}
+                <a href="/api/results/{{ result.id }}/artifacts/screenshot" target="_blank" title="View Screenshot">📷</a>
+                {% endif %}
+                {% if result.trade_log_csv %}
+                <a href="/api/results/{{ result.id }}/artifacts/trade_log" download title="Download Trade Log CSV">📋</a>
+                {% endif %}
+                {% if not result.chart_path and not result.results_screenshot and not result.trade_log_csv %}
+                --
+                {% endif %}
+            </td>
         </tr>
         {% endfor %}
     </tbody>
@@ -40,6 +55,308 @@
 <div class="results-summary">
     Total: {{ results|length }} results
 </div>
+
+<!-- Result Details Modal -->
+<div id="result-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <span class="modal-close" onclick="closeResultModal()">&times;</span>
+        <h3>Result Details - Task #<span id="modal-task-id"></span></h3>
+        <div id="modal-body">Loading...</div>
+    </div>
+</div>
+
+<style>
+.artifacts-cell a {
+    margin-right: 8px;
+    text-decoration: none;
+    font-size: 1.2em;
+}
+.artifacts-cell a:hover {
+    opacity: 0.7;
+}
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+.modal-content {
+    background: var(--surface);
+    padding: 24px;
+    border-radius: 8px;
+    max-width: 800px;
+    max-height: 80vh;
+    overflow-y: auto;
+    position: relative;
+    width: 90%;
+}
+.modal-close {
+    position: absolute;
+    top: 12px;
+    right: 16px;
+    font-size: 24px;
+    cursor: pointer;
+    color: var(--text-secondary);
+}
+.modal-close:hover {
+    color: var(--text-primary);
+}
+.result-details-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 16px;
+    margin-bottom: 20px;
+}
+.result-detail-item {
+    background: var(--bg);
+    padding: 12px;
+    border-radius: 6px;
+}
+.result-detail-item label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    display: block;
+    margin-bottom: 4px;
+}
+.result-detail-item .value {
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+.result-artifacts {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+}
+.artifact-links {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.artifact-links a {
+    padding: 8px 16px;
+    background: var(--primary);
+    color: white;
+    text-decoration: none;
+    border-radius: 6px;
+    font-size: 0.9rem;
+}
+.artifact-links a:hover {
+    opacity: 0.9;
+}
+.chart-preview {
+    margin-top: 16px;
+    text-align: center;
+}
+.chart-preview img {
+    max-width: 100%;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+}
+.result-chart, .result-screenshot, .result-trade-log {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+}
+.result-chart h4, .result-screenshot h4, .result-trade-log h4 {
+    margin-bottom: 12px;
+}
+.trade-log-table-container {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+}
+.trade-log-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+}
+.trade-log-table th, .trade-log-table td {
+    padding: 8px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+}
+.trade-log-table th {
+    background: var(--bg);
+    position: sticky;
+    top: 0;
+    font-weight: 600;
+}
+.trade-log-table tr:hover {
+    background: var(--bg);
+}
+.download-link {
+    color: var(--primary);
+    text-decoration: none;
+}
+.download-link:hover {
+    text-decoration: underline;
+}
+</style>
+
+<script>
+async function showResultDetails(resultId, taskId) {
+    document.getElementById('result-modal').style.display = 'flex';
+    document.getElementById('modal-task-id').textContent = taskId;
+    document.getElementById('modal-body').innerHTML = 'Loading...';
+
+    try {
+        const response = await fetch(`/api/tasks/${taskId}/result`);
+        const result = await response.json();
+
+        let html = '<div class="result-details-grid">';
+
+        const metrics = [
+            ['P/L', result.pl, v => '$' + v.toFixed(2)],
+            ['CAGR', result.cagr, v => v.toFixed(2) + '%'],
+            ['Max Drawdown', result.max_drawdown, v => v.toFixed(2) + '%'],
+            ['MAR Ratio', result.mar, v => v.toFixed(2)],
+            ['Win %', result.win_percentage, v => v.toFixed(1) + '%'],
+            ['Capture Rate', result.capture_rate, v => v.toFixed(2) + '%'],
+            ['Total Premium', result.total_premium, v => '$' + v.toLocaleString()],
+            ['Starting Capital', result.starting_capital, v => '$' + v.toLocaleString()],
+            ['Ending Capital', result.ending_capital, v => '$' + v.toLocaleString()],
+            ['Total Trades', result.total_trades, v => v],
+            ['Winners', result.winners, v => v],
+            ['Avg Per Trade', result.avg_per_trade, v => '$' + v.toFixed(2)],
+            ['Avg Winner', result.avg_winner, v => '$' + v.toFixed(2)],
+            ['Avg Loser', result.avg_loser, v => '$' + v.toFixed(2)],
+            ['Max Winner', result.max_winner, v => '$' + v.toFixed(2)],
+            ['Max Loser', result.max_loser, v => '$' + v.toFixed(2)],
+            ['Avg Min in Trade', result.avg_minutes_in_trade, v => v.toFixed(1)],
+            ['Trade Count', result.trade_count, v => v],
+        ];
+
+        for (const [label, value, formatter] of metrics) {
+            if (value !== null && value !== undefined) {
+                html += `<div class="result-detail-item">
+                    <label>${label}</label>
+                    <div class="value">${formatter(value)}</div>
+                </div>`;
+            }
+        }
+        html += '</div>';
+
+        // Chart section - show inline
+        if (result.chart_url) {
+            html += `<div class="result-chart">
+                <h4>Equity Chart</h4>
+                <div class="chart-container">
+                    <img src="${result.chart_url}" alt="Equity Chart" style="max-width: 100%; border-radius: 8px;">
+                </div>
+            </div>`;
+        }
+
+        // Screenshot section - show inline
+        if (result.screenshot_url) {
+            html += `<div class="result-screenshot">
+                <h4>Results Screenshot</h4>
+                <div class="screenshot-container">
+                    <img src="${result.screenshot_url}" alt="Results Screenshot" style="max-width: 100%; border-radius: 8px;">
+                </div>
+            </div>`;
+        }
+
+        // Trade log section - show as embedded table
+        if (result.trade_log_url) {
+            html += `<div class="result-trade-log">
+                <h4>Trade Log <a href="${result.trade_log_url}" download class="download-link" style="font-size: 0.8em; font-weight: normal;">(Download CSV)</a></h4>
+                <div id="trade-log-container" class="trade-log-table-container">Loading trade log...</div>
+            </div>`;
+        }
+
+        // Download links
+        html += '<div class="result-artifacts"><h4>Download Artifacts</h4><div class="artifact-links">';
+        if (result.chart_url) {
+            html += `<a href="${result.chart_url}" download>📊 Chart</a>`;
+        }
+        if (result.screenshot_url) {
+            html += `<a href="${result.screenshot_url}" download>📷 Screenshot</a>`;
+        }
+        if (result.trade_log_url) {
+            html += `<a href="${result.trade_log_url}" download>📋 Trade Log (CSV)</a>`;
+        }
+        if (!result.chart_url && !result.screenshot_url && !result.trade_log_url) {
+            html += '<span style="color: var(--text-secondary);">No artifacts available</span>';
+        }
+        html += '</div></div>';
+
+        // Summary
+        if (result.summary) {
+            html += `<div class="result-summary" style="margin-top: 16px; padding: 12px; background: var(--bg); border-radius: 6px;">
+                <h4>Summary</h4>
+                <p>${result.summary}</p>
+            </div>`;
+        }
+
+        document.getElementById('modal-body').innerHTML = html;
+
+        // Load trade log if available
+        if (result.trade_log_url) {
+            loadTradeLog(result.trade_log_url);
+        }
+    } catch (error) {
+        document.getElementById('modal-body').innerHTML = 'Error loading details: ' + error.message;
+    }
+}
+
+async function loadTradeLog(url) {
+    try {
+        const response = await fetch(url);
+        const csvText = await response.text();
+        const rows = csvText.split('\n').filter(row => row.trim());
+
+        if (rows.length === 0) {
+            document.getElementById('trade-log-container').innerHTML = '<p>No trade data</p>';
+            return;
+        }
+
+        // Parse CSV
+        const headers = rows[0].split(',').map(h => h.trim());
+        const data = rows.slice(1).map(row => {
+            const values = row.split(',');
+            const obj = {};
+            headers.forEach((h, i) => obj[h] = values[i]?.trim() || '');
+            return obj;
+        });
+
+        // Build table
+        let tableHtml = '<table class="trade-log-table"><thead><tr>';
+        headers.forEach(h => tableHtml += `<th>${h}</th>`);
+        tableHtml += '</tr></thead><tbody>';
+
+        data.slice(0, 100).forEach(row => {  // Limit to 100 rows for performance
+            tableHtml += '<tr>';
+            headers.forEach(h => tableHtml += `<td>${row[h]}</td>`);
+            tableHtml += '</tr>';
+        });
+        tableHtml += '</tbody></table>';
+
+        if (data.length > 100) {
+            tableHtml += `<p style="padding: 8px; color: var(--text-secondary);">Showing 100 of ${data.length} trades. Download CSV for full data.</p>`;
+        }
+
+        document.getElementById('trade-log-container').innerHTML = tableHtml;
+    } catch (error) {
+        document.getElementById('trade-log-container').innerHTML = 'Error loading trade log: ' + error.message;
+    }
+}
+
+function closeResultModal() {
+    document.getElementById('result-modal').style.display = 'none';
+}
+
+// Close modal on escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeResultModal();
+});
+</script>
 {% else %}
 <p class="empty-state">No results yet.</p>
 {% endif %}

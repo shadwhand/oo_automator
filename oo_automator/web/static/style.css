@@ -104,6 +104,21 @@ a:hover {
     text-decoration: none;
 }
 
+.btn-danger {
+    background-color: var(--error);
+    color: white;
+}
+
+.btn-danger:hover {
+    background-color: #d32f2f;
+    text-decoration: none;
+}
+
+.btn-danger:disabled {
+    background-color: #555;
+    cursor: not-allowed;
+}
+
 /* Dashboard header */
 .dashboard-header {
     display: flex;
@@ -536,8 +551,16 @@ tbody tr:hover {
     color: var(--text-secondary);
 }
 
+.param-hint {
+    font-size: 0.875rem;
+    color: var(--accent);
+    margin-bottom: 0.75rem;
+    font-style: italic;
+}
+
 .param-fields {
     display: flex;
+    flex-wrap: wrap;
     gap: 1rem;
     margin-top: 1rem;
     padding-top: 1rem;

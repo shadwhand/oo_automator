@@ -11,19 +11,19 @@ from typing import Optional
 class Selectors:
     """Static selectors for OptionOmega UI elements."""
 
-    # Login
-    LOGIN_EMAIL = "input[type='email'], form div:nth-of-type(1) > input"
-    LOGIN_PASSWORD = "input[type='password']"
-    LOGIN_SUBMIT = "form button[type='submit'], button:has-text('Sign in')"
-    SIGN_IN_BUTTON = "span.btn-primary, text=Sign in"
+    # Login - from Puppeteer recording
+    SIGN_IN_BUTTON = "span.btn-primary"  # On main page, opens login modal
+    LOGIN_EMAIL = "form div:nth-of-type(1) > input"  # First input in login form
+    LOGIN_PASSWORD = "form div:nth-of-type(2) > input"  # Second input in login form
+    LOGIN_SUBMIT = "form button[type='submit'], form button:has-text('Sign')"
 
     # Navigation
     TEST_ROW = "table tbody tr td a"
 
     # New Backtest Modal
     NEW_BACKTEST_BUTTON = "button:has-text('New Backtest')"
-    MODAL_DIALOG = "[id^='headlessui-dialog'], [role='dialog']"
-    RUN_BUTTON = "button:has-text('Run')"
+    MODAL_DIALOG = "[role='dialog']"
+    RUN_BUTTON = "[role='dialog'] button:has-text('Run')"
 
     # Date Presets
     DATE_START = "label:has-text('Start Date') ~ input.input"
@@ -64,7 +64,7 @@ RESULT_SELECTORS = {
     "capture_rate": "dt:has-text('Capture Rate') ~ dd",
     "starting_capital": "dt:has-text('Starting Capital') ~ dd",
     "ending_capital": "dt:has-text('Ending Capital') ~ dd",
-    "total_trades": "div:has(dt:text-is('Trades')) dd",
+    "total_trades": "dt:has-text('Trades') ~ dd",
     "winners": "dt:has-text('Winners') ~ dd",
     "avg_per_trade": "dt:has-text('Avg Per Trade') ~ dd",
     "avg_winner": "dt:has-text('Avg Winner') ~ dd",

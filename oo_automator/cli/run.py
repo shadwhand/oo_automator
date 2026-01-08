@@ -239,3 +239,29 @@ def quick(
     """Quick run with command-line parameters."""
     console.print(f"Quick run: {param} from {start} to {end}")
     # TODO: Implement quick run
+
+
+@app.command()
+def serve(
+    host: str = typer.Option("127.0.0.1", "--host", "-h", help="Host to bind to"),
+    port: int = typer.Option(8000, "--port", "-p", help="Port to bind to"),
+    reload: bool = typer.Option(False, "--reload", "-r", help="Enable auto-reload"),
+):
+    """Start the web dashboard server."""
+    import uvicorn
+
+    console.print(Panel.fit(
+        "[bold blue]OO Automator Dashboard[/bold blue]\n"
+        f"Starting server at http://{host}:{port}",
+        border_style="blue"
+    ))
+
+    # Initialize database
+    init_db()
+
+    uvicorn.run(
+        "oo_automator.web.app:app",
+        host=host,
+        port=port,
+        reload=reload,
+    )

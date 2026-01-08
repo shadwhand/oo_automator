@@ -11,6 +11,7 @@ from .actions import (
     open_new_backtest_modal,
     run_backtest,
     extract_results,
+    extract_full_results,
     capture_failure_artifacts,
 )
 from ..parameters import get_parameter
@@ -42,12 +43,20 @@ class BrowserWorker:
     def __init__(
         self,
         worker_id: int,
+        email: str,
+        password: str,
+        test_url: str,
         headless: bool = False,
         base_delay: float = 0.5,
+        artifacts_dir: str = "./artifacts",
     ):
         self.worker_id = worker_id
+        self.email = email
+        self.password = password
+        self.test_url = test_url
         self.headless = headless
         self.base_delay = base_delay
+        self.artifacts_dir = artifacts_dir
 
         self.state = WorkerState.IDLE
         self.current_task: Optional[int] = None
@@ -91,7 +100,7 @@ class BrowserWorker:
         if self._is_logged_in:
             return True
 
-        await self._page.goto(base_url)
+        await self._page.goto(base_url, wait_until="domcontentloaded")
         success = await login(self._page, email, password)
         self._is_logged_in = success
         return success
@@ -109,22 +118,22 @@ class BrowserWorker:
     async def execute_task(
         self,
         task_id: int,
-        test_url: str,
         parameter_values: dict,
-        credentials: dict,
-        artifacts_dir: str,
     ) -> TaskResult:
         """Execute a single backtest task."""
         self.state = WorkerState.RUNNING
         self.current_task = task_id
+        print(f"[Worker {self.worker_id}] Starting task {task_id}: {parameter_values}")
 
         try:
             # Ensure logged in
+            print(f"[Worker {self.worker_id}] Ensuring logged in...")
             if not await self.ensure_logged_in(
-                credentials["email"],
-                credentials["password"],
-                credentials.get("base_url", "https://optionomega.com")
+                self.email,
+                self.password,
+                "https://optionomega.com/"
             ):
+                print(f"[Worker {self.worker_id}] Login failed!")
                 return TaskResult(
                     success=False,
                     task_id=task_id,
@@ -132,9 +141,12 @@ class BrowserWorker:
                     error_message="Failed to log in",
                     failure_type="session",
                 )
+            print(f"[Worker {self.worker_id}] Logged in successfully")
 
             # Navigate to test
-            if not await self.ensure_on_test(test_url):
+            print(f"[Worker {self.worker_id}] Navigating to test: {self.test_url}")
+            if not await self.ensure_on_test(self.test_url):
+                print(f"[Worker {self.worker_id}] Navigation failed!")
                 return TaskResult(
                     success=False,
                     task_id=task_id,
@@ -142,9 +154,12 @@ class BrowserWorker:
                     error_message="Failed to navigate to test",
                     failure_type="timing",
                 )
+            print(f"[Worker {self.worker_id}] On test page")
 
             # Open new backtest modal
+            print(f"[Worker {self.worker_id}] Opening New Backtest modal...")
             if not await open_new_backtest_modal(self._page):
+                print(f"[Worker {self.worker_id}] Failed to open modal!")
                 return TaskResult(
                     success=False,
                     task_id=task_id,
@@ -152,12 +167,16 @@ class BrowserWorker:
                     error_message="Failed to open backtest modal",
                     failure_type="modal",
                 )
+            print(f"[Worker {self.worker_id}] Modal opened")
 
             # Set parameter values
+            print(f"[Worker {self.worker_id}] Setting parameters...")
             for param_name, value in parameter_values.items():
                 param = get_parameter(param_name)
                 if param:
+                    print(f"[Worker {self.worker_id}] Setting {param_name}={value}")
                     if not await param.set_value(self._page, value):
+                        print(f"[Worker {self.worker_id}] Failed to set {param_name}")
                         return TaskResult(
                             success=False,
                             task_id=task_id,
@@ -168,11 +187,13 @@ class BrowserWorker:
                     await asyncio.sleep(self.base_delay)
 
             # Run backtest
+            print(f"[Worker {self.worker_id}] Running backtest...")
             if not await run_backtest(self._page):
+                print(f"[Worker {self.worker_id}] Backtest timed out!")
                 artifacts = await capture_failure_artifacts(
                     self._page,
-                    f"{artifacts_dir}/task_{task_id}_screenshot.png",
-                    f"{artifacts_dir}/task_{task_id}_page.html",
+                    f"{self.artifacts_dir}/task_{task_id}_screenshot.png",
+                    f"{self.artifacts_dir}/task_{task_id}_page.html",
                 )
                 return TaskResult(
                     success=False,
@@ -183,8 +204,10 @@ class BrowserWorker:
                     artifacts=artifacts,
                 )
 
-            # Extract results
-            results = await extract_results(self._page)
+            # Extract results (including chart, trade log, summary)
+            print(f"[Worker {self.worker_id}] Extracting full results...")
+            results = await extract_full_results(self._page, self.artifacts_dir, task_id)
+            print(f"[Worker {self.worker_id}] Task {task_id} completed: {results}")
 
             self.state = WorkerState.IDLE
             self.current_task = None
@@ -198,12 +221,13 @@ class BrowserWorker:
 
         except Exception as e:
             self.state = WorkerState.ERROR
+            print(f"[Worker {self.worker_id}] Exception: {e}")
 
             try:
                 artifacts = await capture_failure_artifacts(
                     self._page,
-                    f"{artifacts_dir}/task_{task_id}_screenshot.png",
-                    f"{artifacts_dir}/task_{task_id}_page.html",
+                    f"{self.artifacts_dir}/task_{task_id}_screenshot.png",
+                    f"{self.artifacts_dir}/task_{task_id}_page.html",
                 )
             except Exception:
                 artifacts = {}

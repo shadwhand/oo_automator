@@ -4,14 +4,24 @@ from oo_automator.browser.worker import BrowserWorker, WorkerState, TaskResult
 
 
 def test_worker_initial_state():
-    worker = BrowserWorker(worker_id=1)
+    worker = BrowserWorker(
+        worker_id=1,
+        email="test@example.com",
+        password="password",
+        test_url="https://example.com/test"
+    )
     assert worker.worker_id == 1
     assert worker.state == WorkerState.IDLE
     assert worker.current_task is None
 
 
 def test_worker_state_transitions():
-    worker = BrowserWorker(worker_id=1)
+    worker = BrowserWorker(
+        worker_id=1,
+        email="test@example.com",
+        password="password",
+        test_url="https://example.com/test"
+    )
 
     worker.state = WorkerState.RUNNING
     assert worker.state == WorkerState.RUNNING

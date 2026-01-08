@@ -86,6 +86,13 @@ class Result(SQLModel, table=True):
     # Raw data storage
     raw_data: Optional[dict] = Field(default=None, sa_column=Column(JSON))
 
+    # Artifact paths
+    chart_path: Optional[str] = None
+    results_screenshot: Optional[str] = None
+    trade_log_csv: Optional[str] = None
+    trade_count: Optional[int] = None
+    summary: Optional[str] = None
+
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
     task: Optional[Task] = Relationship(back_populates="result")

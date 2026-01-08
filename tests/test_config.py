@@ -55,8 +55,12 @@ class TestWebConfig:
 class TestConfig:
     """Test main configuration."""
 
-    def test_default_config(self):
-        """Test default configuration values."""
+    def test_default_config(self, monkeypatch):
+        """Test default configuration values when no env vars set."""
+        # Clear any credentials from environment
+        monkeypatch.delenv("OO_EMAIL", raising=False)
+        monkeypatch.delenv("OO_PASSWORD", raising=False)
+
         config = Config()
         assert config.email is None
         assert config.password is None

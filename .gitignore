@@ -55,3 +55,4 @@ data/
 *.backup
 Backup*/
 backup_*/
+artifacts/
