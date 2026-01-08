@@ -5,7 +5,7 @@ from sqlmodel import select
 
 from ...db.connection import get_engine, get_session
 from ...db.models import Test, Run
-from ...db.queries import get_recent_tests
+from ...db.queries import get_recent_tests, get_tests_with_run_summary
 from ...parameters import list_parameters
 from ...config import get_config
 from ..templates_config import get_templates
@@ -22,11 +22,11 @@ async def home(request: Request):
     session = get_session(engine)
 
     try:
-        tests = get_recent_tests(session, limit=10)
+        test_summaries = get_tests_with_run_summary(session, limit=10)
         return templates.TemplateResponse(
             request,
             "index.html",
-            {"tests": tests}
+            {"test_summaries": test_summaries}
         )
     finally:
         session.close()

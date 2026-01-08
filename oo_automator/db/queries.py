@@ -138,3 +138,45 @@ def increment_test_run_count(session: Session, test_id: int) -> None:
     test.run_count += 1
     test.last_run_at = datetime.utcnow()
     session.commit()
+
+
+def get_tests_with_run_summary(session: Session, limit: int = 10) -> list[dict]:
+    """Get recent tests with run count and latest run info.
+
+    Returns list of dicts with: test, run_count, latest_run, latest_result
+    """
+    # Get recent tests
+    tests = get_recent_tests(session, limit=limit)
+
+    results = []
+    for test in tests:
+        # Get latest run for this test
+        latest_run_stmt = (
+            select(Run)
+            .where(Run.test_id == test.id)
+            .order_by(Run.created_at.desc())
+            .limit(1)
+        )
+        latest_run = session.exec(latest_run_stmt).first()
+
+        # Get latest result if we have a run
+        latest_result = None
+        if latest_run:
+            # Get the first completed task's result for this run
+            result_stmt = (
+                select(Result)
+                .join(Task, Result.task_id == Task.id)
+                .where(Task.run_id == latest_run.id)
+                .order_by(Result.created_at.desc())
+                .limit(1)
+            )
+            latest_result = session.exec(result_stmt).first()
+
+        results.append({
+            "test": test,
+            "run_count": test.run_count,
+            "latest_run": latest_run,
+            "latest_result": latest_result,
+        })
+
+    return results

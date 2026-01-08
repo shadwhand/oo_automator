@@ -11,22 +11,50 @@
 <div class="dashboard-grid">
     <section class="tests-section">
         <h2>Recent Tests</h2>
-        {% if tests %}
+        <p class="section-subtitle">Each test URL can have multiple runs</p>
+        {% if test_summaries %}
         <ul class="tests-list">
-            {% for test in tests %}
+            {% for summary in test_summaries %}
+            {% set test = summary.test %}
+            {% set latest_run = summary.latest_run %}
+            {% set latest_result = summary.latest_result %}
             <li class="test-item">
-                <a href="/tests/{{ test.id }}" class="test-link">
-                    <div class="test-info">
-                        <strong class="test-name">{{ test.name or "(unnamed)" }}</strong>
-                        <span class="test-url">{{ test.url[:60] }}{% if test.url|length > 60 %}...{% endif %}</span>
-                    </div>
-                    <div class="test-stats">
-                        <span class="run-count">{{ test.run_count }} runs</span>
-                        {% if test.last_run_at %}
-                        <span class="last-run">Last: {{ test.last_run_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                <div class="test-row">
+                    <a href="/tests/{{ test.id }}" class="test-link">
+                        <div class="test-info">
+                            <strong class="test-name">{{ test.name or "(unnamed)" }}</strong>
+                            <span class="test-url">{{ test.url[:60] }}{% if test.url|length > 60 %}...{% endif %}</span>
+                        </div>
+                        <div class="test-meta">
+                            <span class="run-count">{{ test.run_count }} run{% if test.run_count != 1 %}s{% endif %}</span>
+                            {% if test.last_run_at %}
+                            <span class="last-run">Last: {{ test.last_run_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                            {% endif %}
+                        </div>
+                        {% if latest_result %}
+                        <div class="quick-stats">
+                            {% if latest_result.cagr is not none %}
+                            <span class="stat {% if latest_result.cagr >= 0 %}positive{% else %}negative{% endif %}">
+                                CAGR: {{ "%.1f"|format(latest_result.cagr) }}%
+                            </span>
+                            {% endif %}
+                            {% if latest_result.win_percentage is not none %}
+                            <span class="stat">Win: {{ "%.0f"|format(latest_result.win_percentage) }}%</span>
+                            {% endif %}
+                            {% if latest_result.max_drawdown is not none %}
+                            <span class="stat negative">MDD: {{ "%.1f"|format(latest_result.max_drawdown) }}%</span>
+                            {% endif %}
+                        </div>
+                        {% elif latest_run %}
+                        <div class="quick-stats">
+                            <span class="stat muted">Status: {{ latest_run.status }}</span>
+                        </div>
                         {% endif %}
-                    </div>
-                </a>
+                    </a>
+                    <a href="/new-run?test_id={{ test.id }}" class="btn btn-sm btn-secondary new-run-btn" title="Start a new run for this test">
+                        + New Run
+                    </a>
+                </div>
             </li>
             {% endfor %}
         </ul>
@@ -53,4 +81,83 @@
         </div>
     </section>
 </div>
+
+<style>
+.section-subtitle {
+    color: var(--text-muted, #6c757d);
+    font-size: 0.875rem;
+    margin-top: -0.5rem;
+    margin-bottom: 1rem;
+}
+
+.test-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.test-link {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.test-meta {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.875rem;
+    color: var(--text-muted, #6c757d);
+}
+
+.quick-stats {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.8rem;
+    margin-top: 0.25rem;
+}
+
+.quick-stats .stat {
+    padding: 0.125rem 0.5rem;
+    background: var(--bg-secondary, #f8f9fa);
+    border-radius: 4px;
+}
+
+.quick-stats .stat.positive {
+    color: var(--success, #28a745);
+    background: rgba(40, 167, 69, 0.1);
+}
+
+.quick-stats .stat.negative {
+    color: var(--danger, #dc3545);
+    background: rgba(220, 53, 69, 0.1);
+}
+
+.quick-stats .stat.muted {
+    color: var(--text-muted, #6c757d);
+}
+
+.new-run-btn {
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.btn-sm {
+    padding: 0.25rem 0.75rem;
+    font-size: 0.875rem;
+}
+
+.btn-secondary {
+    background: var(--bg-secondary, #6c757d);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.btn-secondary:hover {
+    background: var(--bg-secondary-hover, #5a6268);
+}
+</style>
 {% endblock %}
