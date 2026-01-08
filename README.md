@@ -1,6 +1,6 @@
 # OO Automator v2
 
-Automated backtesting system for OptionOmega with live dashboard and smart parameter optimization.
+Automated backtesting system  with live dashboard and smart parameter optimization.
 
 ## Features
 
