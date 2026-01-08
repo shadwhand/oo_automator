@@ -1,11 +1,51 @@
 """Browser automation actions for OptionOmega."""
 import asyncio
+import csv
 import re
 import time
 from typing import Any, Optional
 from playwright.async_api import Page, TimeoutError as PlaywrightTimeout
 
 from .selectors import Selectors, get_result_selectors
+
+
+async def _scrape_trade_log_table(page: Page, artifacts_dir: str, task_id: int, results: dict):
+    """Fallback: Scrape trade log from table if download fails."""
+    trades = []
+    table = page.locator("table")
+    if await table.count() > 0:
+        # Get headers
+        headers = []
+        header_cells = page.locator("table thead th")
+        header_count = await header_cells.count()
+        for i in range(header_count):
+            header_text = await header_cells.nth(i).text_content()
+            headers.append(header_text.strip() if header_text else f"col_{i}")
+
+        # Get rows
+        rows = page.locator("table tbody tr")
+        row_count = await rows.count()
+        for i in range(min(row_count, 500)):  # Limit to 500 rows
+            row = rows.nth(i)
+            cells = row.locator("td")
+            cell_count = await cells.count()
+            row_data = {}
+            for j in range(cell_count):
+                cell_text = await cells.nth(j).text_content()
+                header = headers[j] if j < len(headers) else f"col_{j}"
+                row_data[header] = cell_text.strip() if cell_text else ""
+            trades.append(row_data)
+
+        # Save trade log as CSV
+        if trades:
+            csv_path = f"{artifacts_dir}/task_{task_id}_trades.csv"
+            with open(csv_path, "w", newline="") as f:
+                writer = csv.DictWriter(f, fieldnames=headers)
+                writer.writeheader()
+                writer.writerows(trades)
+            results["trade_log_csv"] = csv_path
+            results["trade_count"] = len(trades)
+            print(f"Scraped trade log: {len(trades)} trades")
 
 
 def parse_currency(value: str) -> float:
@@ -256,49 +296,52 @@ async def extract_full_results(page: Page, artifacts_dir: str = "./artifacts", t
     except Exception as e:
         print(f"Failed to capture results screenshot: {e}")
 
-    # Extract trade log
+    # Extract trade log by downloading CSV directly from OptionOmega
     try:
         # Click Trade Log tab
-        trade_log_tab = page.locator("a:has-text('Trade Log'), span:has-text('Trade Log')")
+        trade_log_tab = page.locator("a:has-text('Trade Log'), span:has-text('Trade Log'), button:has-text('Trade Log')")
         if await trade_log_tab.count() > 0:
             await trade_log_tab.first.click()
             await page.wait_for_timeout(1000)
 
-            # Extract trade log table data
-            trades = []
-            table = page.locator("table")
-            if await table.count() > 0:
-                # Get headers
-                headers = []
-                header_cells = page.locator("table thead th")
-                header_count = await header_cells.count()
-                for i in range(header_count):
-                    header_text = await header_cells.nth(i).text_content()
-                    headers.append(header_text.strip() if header_text else f"col_{i}")
+            # Find and click the download/export button
+            download_btn = page.locator(
+                "button:has-text('Download'), "
+                "button:has-text('Export'), "
+                "a:has-text('Download'), "
+                "a:has-text('Export'), "
+                "[aria-label*='download' i], "
+                "[aria-label*='export' i], "
+                "button svg[class*='download'], "
+                "button:has(svg)"  # Button with icon
+            )
 
-                # Get rows
-                rows = page.locator("table tbody tr")
-                row_count = await rows.count()
-                for i in range(min(row_count, 500)):  # Limit to 500 rows
-                    row = rows.nth(i)
-                    cells = row.locator("td")
-                    cell_count = await cells.count()
-                    row_data = {}
-                    for j in range(cell_count):
-                        cell_text = await cells.nth(j).text_content()
-                        header = headers[j] if j < len(headers) else f"col_{j}"
-                        row_data[header] = cell_text.strip() if cell_text else ""
-                    trades.append(row_data)
+            if await download_btn.count() > 0:
+                # Set up download handler
+                csv_path = f"{artifacts_dir}/task_{task_id}_trades.csv"
 
-                # Save trade log as CSV
-                if trades:
-                    csv_path = f"{artifacts_dir}/task_{task_id}_trades.csv"
-                    with open(csv_path, "w", newline="") as f:
-                        writer = csv.DictWriter(f, fieldnames=headers)
-                        writer.writeheader()
-                        writer.writerows(trades)
+                async with page.expect_download() as download_info:
+                    await download_btn.first.click()
+
+                download = await download_info.value
+                await download.save_as(csv_path)
+
+                # Count rows in the downloaded CSV
+                try:
+                    with open(csv_path, 'r') as f:
+                        # Skip header, count data rows
+                        lines = f.readlines()
+                        trade_count = max(0, len(lines) - 1)  # Subtract header row
                     results["trade_log_csv"] = csv_path
-                    results["trade_count"] = len(trades)
+                    results["trade_count"] = trade_count
+                    print(f"Downloaded trade log: {trade_count} trades")
+                except Exception as e:
+                    print(f"Error reading downloaded CSV: {e}")
+                    results["trade_log_csv"] = csv_path
+            else:
+                print("Download button not found, falling back to table scraping")
+                # Fallback: scrape table if download button not found
+                await _scrape_trade_log_table(page, artifacts_dir, task_id, results)
 
             # Click back to Summary tab
             summary_tab = page.locator("a:has-text('Summary'), span:has-text('Summary')")
@@ -308,6 +351,11 @@ async def extract_full_results(page: Page, artifacts_dir: str = "./artifacts", t
 
     except Exception as e:
         print(f"Failed to extract trade log: {e}")
+        # Try fallback table scraping
+        try:
+            await _scrape_trade_log_table(page, artifacts_dir, task_id, results)
+        except:
+            pass
 
     # Extract summary/strategy description
     try:
