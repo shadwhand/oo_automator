@@ -5,8 +5,8 @@ from oo_automator.parameters.delta import DeltaParameter
 def test_delta_parameter_metadata():
     param = DeltaParameter()
     assert param.name == "delta"
-    assert param.display_name == "Delta"
-    assert "put" in param.selectors or len(param.selectors) > 0
+    assert param.display_name == "Position Delta"
+    assert "leg_container" in param.selectors or len(param.selectors) > 0
 
 
 def test_delta_configure():
@@ -17,7 +17,9 @@ def test_delta_configure():
     assert "start" in field_names
     assert "end" in field_names
     assert "step" in field_names
-    assert "apply_to" in field_names
+    assert "num_legs" in field_names
+    assert "leg_to_sweep" in field_names
+    assert "delta_type" in field_names
 
 
 def test_delta_generate_values_range():
@@ -38,6 +40,7 @@ def test_delta_generate_values_default_step():
     param = DeltaParameter()
     config = param.configure()
     defaults = config.get_defaults()
-    values = param.generate_values({**defaults, "start": 5, "end": 8})
+    # Default step is 10, so from 5 to 15 we get [5, 15]
+    values = param.generate_values({**defaults, "start": 5, "end": 25})
 
-    assert values == [5, 6, 7, 8]
+    assert values == [5, 15, 25]
