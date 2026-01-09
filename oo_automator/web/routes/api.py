@@ -12,6 +12,7 @@ from ...db.queries import get_or_create_test, create_run, create_tasks_for_run, 
 from ...core.run_manager import generate_combinations
 from ...core.executor import start_run_execution, stop_run_execution, pause_run_execution, get_executor
 from ...analysis.recommendations import generate_recommendations
+from ...analysis.charts import parse_trade_log_csv, aggregate_for_charts
 from ..templates_config import get_templates
 from .websocket import notify_run_update
 
@@ -660,5 +661,172 @@ async def rename_test(test_id: int, data: TestRenameRequest):
         session.refresh(test)
 
         return {"id": test.id, "name": test.name, "message": "Test renamed successfully"}
+    finally:
+        session.close()
+
+
+# =============================================================================
+# Analytics Endpoints
+# =============================================================================
+
+
+@router.get("/analytics/tests")
+async def get_analytics_tests():
+    """Get tests with trade log data.
+
+    Returns tests that have at least one run with results containing trade_log_csv.
+    """
+    engine = get_engine()
+    session = get_session(engine)
+
+    try:
+        # Query tests that have runs with results containing trade_log_csv
+        # We need to join Test -> Run -> Task -> Result and filter by trade_log_csv IS NOT NULL
+        statement = (
+            select(Test, Run)
+            .join(Run, Test.id == Run.test_id)
+            .join(Task, Run.id == Task.run_id)
+            .join(Result, Task.id == Result.task_id)
+            .where(Result.trade_log_csv.isnot(None))
+            .distinct()
+        )
+        rows = list(session.exec(statement).all())
+
+        # Group by test to count runs with trade logs
+        test_runs: dict[int, dict] = {}
+        for test, run in rows:
+            if test.id not in test_runs:
+                test_runs[test.id] = {
+                    "id": test.id,
+                    "name": test.name,
+                    "url": test.url,
+                    "run_count": 0,
+                    "run_ids": set(),
+                }
+            if run.id not in test_runs[test.id]["run_ids"]:
+                test_runs[test.id]["run_ids"].add(run.id)
+                test_runs[test.id]["run_count"] += 1
+
+        # Convert to list and remove run_ids set
+        tests_list = []
+        for test_data in test_runs.values():
+            del test_data["run_ids"]
+            tests_list.append(test_data)
+
+        return {"tests": tests_list}
+    finally:
+        session.close()
+
+
+@router.get("/analytics/data")
+async def get_analytics_data(
+    test_id: int,
+    run_ids: Optional[str] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+):
+    """Get aggregated analytics data for charts.
+
+    Args:
+        test_id: ID of the test to get analytics for.
+        run_ids: Optional comma-separated list of run IDs to include.
+        start_date: Optional start date filter (YYYY-MM-DD).
+        end_date: Optional end date filter (YYYY-MM-DD).
+
+    Returns:
+        Aggregated chart data from aggregate_for_charts().
+    """
+    from datetime import date as date_type
+
+    engine = get_engine()
+    session = get_session(engine)
+
+    try:
+        # Check if test exists
+        test_statement = select(Test).where(Test.id == test_id)
+        test = session.exec(test_statement).first()
+        if not test:
+            raise HTTPException(status_code=404, detail="Test not found")
+
+        # Parse run_ids if provided
+        run_id_list: list[int] | None = None
+        if run_ids:
+            try:
+                run_id_list = [int(rid.strip()) for rid in run_ids.split(",")]
+            except ValueError:
+                raise HTTPException(status_code=400, detail="Invalid run_ids format")
+
+        # Parse date filters
+        start_dt: date_type | None = None
+        end_dt: date_type | None = None
+        if start_date:
+            try:
+                start_dt = date_type.fromisoformat(start_date)
+            except ValueError:
+                raise HTTPException(status_code=400, detail="Invalid start_date format")
+        if end_date:
+            try:
+                end_dt = date_type.fromisoformat(end_date)
+            except ValueError:
+                raise HTTPException(status_code=400, detail="Invalid end_date format")
+
+        # Query runs for this test
+        run_statement = select(Run).where(Run.test_id == test_id)
+        if run_id_list:
+            run_statement = run_statement.where(Run.id.in_(run_id_list))
+        runs = list(session.exec(run_statement).all())
+
+        if not runs:
+            # Return empty aggregation
+            return aggregate_for_charts([])
+
+        # Collect all trades from all runs
+        all_trades = []
+
+        for run in runs:
+            # Get tasks and results for this run
+            task_result_statement = (
+                select(Task, Result)
+                .join(Result, Task.id == Result.task_id)
+                .where(Task.run_id == run.id)
+                .where(Result.trade_log_csv.isnot(None))
+            )
+            task_results = list(session.exec(task_result_statement).all())
+
+            for task, result in task_results:
+                # Get parameter info from task
+                param_values = task.parameter_values or {}
+                param_name = list(param_values.keys())[0] if param_values else "unknown"
+                param_value = str(param_values.get(param_name, "")) if param_values else ""
+
+                # Parse the trade log CSV
+                csv_path = result.trade_log_csv
+                if csv_path and os.path.exists(csv_path):
+                    try:
+                        trades = parse_trade_log_csv(
+                            csv_path,
+                            run_id=run.id,
+                            parameter_name=param_name,
+                            parameter_value=param_value,
+                        )
+
+                        # Apply date filters
+                        if start_dt or end_dt:
+                            filtered_trades = []
+                            for trade in trades:
+                                if start_dt and trade.date_opened < start_dt:
+                                    continue
+                                if end_dt and trade.date_opened > end_dt:
+                                    continue
+                                filtered_trades.append(trade)
+                            trades = filtered_trades
+
+                        all_trades.extend(trades)
+                    except Exception:
+                        # Skip files that can't be parsed
+                        continue
+
+        # Aggregate all trades
+        return aggregate_for_charts(all_trades)
     finally:
         session.close()
