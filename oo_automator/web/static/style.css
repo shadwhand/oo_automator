@@ -31,11 +31,33 @@ header {
     border-bottom: 1px solid var(--border-color);
 }
 
-header nav a {
+header nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+header nav .nav-brand {
     color: var(--accent);
     text-decoration: none;
     font-size: 1.5rem;
     font-weight: bold;
+}
+
+header nav .nav-links {
+    display: flex;
+    gap: 1.5rem;
+}
+
+header nav .nav-links a {
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 1rem;
+    transition: color 0.2s;
+}
+
+header nav .nav-links a:hover {
+    color: var(--accent);
 }
 
 main {
