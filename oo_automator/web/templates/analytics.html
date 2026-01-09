@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}OO Automator - Analytics{% endblock %}
+
+{% block content %}
+<div class="analytics-header">
+    <h1>Analytics Dashboard</h1>
+</div>
+
+<div class="analytics-container">
+    <!-- Test selector will load chart data via htmx -->
+    <section class="test-selector">
+        <h2>Select Test</h2>
+        <div hx-get="/api/analytics/tests" hx-trigger="load" hx-swap="innerHTML">
+            Loading tests...
+        </div>
+    </section>
+
+    <!-- Charts container - will be populated via htmx/Chart.js -->
+    <section class="charts-section">
+        <div id="analytics-charts">
+            <p>Select a test to view analytics</p>
+        </div>
+    </section>
+</div>
+{% endblock %}

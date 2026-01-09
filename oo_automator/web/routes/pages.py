@@ -359,6 +359,13 @@ async def run_advanced_metrics(request: Request, run_id: int):
         session.close()
 
 
+@router.get("/analytics")
+async def analytics_page(request: Request):
+    """Analytics dashboard page."""
+    templates = get_templates()
+    return templates.TemplateResponse(request, "analytics.html", {})
+
+
 @router.get("/tests/{test_id}", response_class=HTMLResponse)
 async def test_detail(request: Request, test_id: int):
     """Test detail page showing all runs for a test."""

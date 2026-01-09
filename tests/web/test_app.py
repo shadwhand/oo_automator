@@ -30,3 +30,9 @@ def test_api_list_runs(client):
     response = client.get("/api/runs")
     assert response.status_code == 200
     assert "runs" in response.json()
+
+
+def test_analytics_page(client):
+    """Test analytics page loads."""
+    response = client.get("/analytics")
+    assert response.status_code == 200
