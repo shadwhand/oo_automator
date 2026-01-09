@@ -10,15 +10,65 @@
     <script src="/static/charts.js"></script>
 </head>
 <body>
+    <!-- Hamburger Menu Drawer -->
+    <div class="nav-drawer" id="navDrawer">
+        <div class="drawer-header">
+            <span class="drawer-title">Menu</span>
+            <button class="drawer-close" onclick="toggleDrawer()">&times;</button>
+        </div>
+        <div class="drawer-links">
+            <a href="/">
+                <span class="drawer-icon">&#9776;</span>
+                Dashboard
+            </a>
+            <a href="/analytics">
+                <span class="drawer-icon">&#128202;</span>
+                Analytics
+            </a>
+            <a href="/new-run">
+                <span class="drawer-icon">&#43;</span>
+                New Run
+            </a>
+        </div>
+    </div>
+    <div class="drawer-overlay" id="drawerOverlay" onclick="toggleDrawer()"></div>
+
     <header>
         <nav>
-            <a href="/" class="nav-brand">OO Automator</a>
+            <div class="nav-left">
+                <button class="hamburger" onclick="toggleDrawer()" aria-label="Open menu">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+                <a href="/" class="nav-brand">OO Automator</a>
+            </div>
             <div class="nav-links">
                 <a href="/">Dashboard</a>
                 <a href="/analytics">Analytics</a>
             </div>
         </nav>
     </header>
+
+    <script>
+    function toggleDrawer() {
+        const drawer = document.getElementById('navDrawer');
+        const overlay = document.getElementById('drawerOverlay');
+        drawer.classList.toggle('open');
+        overlay.classList.toggle('open');
+        document.body.classList.toggle('drawer-open');
+    }
+
+    // Close drawer on escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            const drawer = document.getElementById('navDrawer');
+            if (drawer.classList.contains('open')) {
+                toggleDrawer();
+            }
+        }
+    });
+    </script>
     <main>
         {% block content %}{% endblock %}
     </main>

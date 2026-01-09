@@ -37,6 +37,12 @@ header nav {
     align-items: center;
 }
 
+header nav .nav-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
 header nav .nav-brand {
     color: var(--accent);
     text-decoration: none;
@@ -58,6 +64,131 @@ header nav .nav-links a {
 
 header nav .nav-links a:hover {
     color: var(--accent);
+}
+
+/* Hamburger Button */
+.hamburger {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 24px;
+    height: 18px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+}
+
+.hamburger span {
+    display: block;
+    width: 100%;
+    height: 2px;
+    background-color: var(--text-primary);
+    border-radius: 2px;
+    transition: all 0.3s ease;
+}
+
+.hamburger:hover span {
+    background-color: var(--accent);
+}
+
+/* Navigation Drawer */
+.nav-drawer {
+    position: fixed;
+    top: 0;
+    left: -280px;
+    width: 280px;
+    height: 100vh;
+    background-color: var(--bg-secondary);
+    z-index: 1000;
+    transition: left 0.3s ease;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+}
+
+.nav-drawer.open {
+    left: 0;
+}
+
+.drawer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.drawer-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.drawer-close {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+}
+
+.drawer-close:hover {
+    color: var(--accent);
+}
+
+.drawer-links {
+    padding: 1rem 0;
+    flex: 1;
+}
+
+.drawer-links a {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.5rem;
+    color: var(--text-primary);
+    text-decoration: none;
+    font-size: 1rem;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.drawer-links a:hover {
+    background-color: var(--bg-tertiary);
+    color: var(--accent);
+    text-decoration: none;
+}
+
+.drawer-icon {
+    font-size: 1.25rem;
+    width: 24px;
+    text-align: center;
+}
+
+/* Drawer Overlay */
+.drawer-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.drawer-overlay.open {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Prevent body scroll when drawer is open */
+body.drawer-open {
+    overflow: hidden;
 }
 
 main {
