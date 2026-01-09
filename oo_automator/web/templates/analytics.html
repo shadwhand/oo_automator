@@ -3,24 +3,773 @@
 {% block title %}OO Automator - Analytics{% endblock %}
 
 {% block content %}
+<style>
+    .analytics-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .analytics-header h1 {
+        margin: 0;
+    }
+
+    .export-btn {
+        background-color: #4a90d9;
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.9rem;
+    }
+
+    .export-btn:hover {
+        background-color: #357abd;
+    }
+
+    .export-btn:disabled {
+        background-color: #ccc;
+        cursor: not-allowed;
+    }
+
+    .filters-section {
+        background-color: #f5f5f5;
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 1.5rem;
+    }
+
+    .filters-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        align-items: center;
+    }
+
+    .filter-group {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .filter-group label {
+        font-weight: 500;
+        white-space: nowrap;
+    }
+
+    .filter-group select,
+    .filter-group input[type="date"] {
+        padding: 0.4rem 0.6rem;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-size: 0.9rem;
+    }
+
+    .runs-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        align-items: center;
+    }
+
+    .run-checkbox {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        background-color: white;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        border: 1px solid #ddd;
+    }
+
+    .run-checkbox input {
+        margin: 0;
+    }
+
+    .charts-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.5rem;
+    }
+
+    @media (max-width: 1024px) {
+        .charts-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .chart-card {
+        background-color: white;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 1rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    .chart-card h3 {
+        margin: 0 0 1rem 0;
+        font-size: 1rem;
+        color: #333;
+    }
+
+    .chart-container {
+        position: relative;
+        height: 300px;
+    }
+
+    .no-data-message {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        color: #888;
+        font-style: italic;
+    }
+
+    .loading-indicator {
+        display: none;
+        text-align: center;
+        padding: 2rem;
+        color: #666;
+    }
+
+    .loading-indicator.active {
+        display: block;
+    }
+
+    .placeholder-message {
+        text-align: center;
+        padding: 3rem;
+        color: #888;
+        background-color: #f9f9f9;
+        border-radius: 8px;
+    }
+</style>
+
 <div class="analytics-header">
     <h1>Analytics Dashboard</h1>
+    <button class="export-btn" id="export-btn" onclick="exportData()" disabled>Export CSV</button>
 </div>
 
-<div class="analytics-container">
-    <!-- Test selector will load chart data via htmx -->
-    <section class="test-selector">
-        <h2>Select Test</h2>
-        <div hx-get="/api/analytics/tests" hx-trigger="load" hx-swap="innerHTML">
-            Loading tests...
+<div class="filters-section">
+    <div class="filters-row">
+        <div class="filter-group">
+            <label for="test-select">Test:</label>
+            <select id="test-select" onchange="onTestSelected(this.value)">
+                <option value="">Select a test...</option>
+            </select>
         </div>
-    </section>
 
-    <!-- Charts container - will be populated via htmx/Chart.js -->
-    <section class="charts-section">
-        <div id="analytics-charts">
-            <p>Select a test to view analytics</p>
+        <div class="filter-group">
+            <label>Runs:</label>
+            <div id="runs-container" class="runs-container">
+                <span style="color: #888;">Select a test first</span>
+            </div>
         </div>
-    </section>
+    </div>
+
+    <div class="filters-row" style="margin-top: 1rem;">
+        <div class="filter-group">
+            <label for="start-date">Date Range:</label>
+            <input type="date" id="start-date" onchange="refreshCharts()">
+            <span>to</span>
+            <input type="date" id="end-date" onchange="refreshCharts()">
+        </div>
+
+        <div class="filter-group">
+            <label for="param-select">Parameters:</label>
+            <select id="param-select" onchange="refreshCharts()">
+                <option value="">All parameters</option>
+            </select>
+        </div>
+    </div>
 </div>
+
+<div id="loading-indicator" class="loading-indicator">
+    Loading chart data...
+</div>
+
+<div id="placeholder" class="placeholder-message">
+    <p>Select a test to view analytics</p>
+</div>
+
+<div id="charts-section" class="charts-grid" style="display: none;">
+    <div class="chart-card">
+        <h3>Daily P/L by Parameter</h3>
+        <div class="chart-container">
+            <canvas id="daily-pl-chart"></canvas>
+        </div>
+    </div>
+
+    <div class="chart-card">
+        <h3>Cumulative Returns</h3>
+        <div class="chart-container">
+            <canvas id="cumulative-chart"></canvas>
+        </div>
+    </div>
+
+    <div class="chart-card">
+        <h3>Stop Loss Distribution</h3>
+        <div class="chart-container">
+            <canvas id="stop-loss-chart"></canvas>
+        </div>
+    </div>
+
+    <div class="chart-card">
+        <h3>Win/Loss by Reason</h3>
+        <div class="chart-container">
+            <canvas id="reason-chart"></canvas>
+        </div>
+    </div>
+
+    <div class="chart-card">
+        <h3>VIX Impact on P/L</h3>
+        <div class="chart-container">
+            <canvas id="vix-chart"></canvas>
+        </div>
+    </div>
+
+    <div class="chart-card">
+        <h3>Average Trade Duration</h3>
+        <div class="chart-container">
+            <canvas id="duration-chart"></canvas>
+        </div>
+    </div>
+</div>
+
+<script>
+    // State
+    let currentTestId = null;
+    let selectedRunIds = [];
+    let chartInstances = {};
+    let analyticsData = null;
+
+    // Color palette for charts
+    const colorPalette = [
+        'rgba(75, 192, 192, 1)',
+        'rgba(255, 99, 132, 1)',
+        'rgba(54, 162, 235, 1)',
+        'rgba(255, 206, 86, 1)',
+        'rgba(153, 102, 255, 1)',
+        'rgba(255, 159, 64, 1)',
+        'rgba(199, 199, 199, 1)',
+        'rgba(83, 102, 255, 1)',
+        'rgba(255, 99, 255, 1)',
+        'rgba(99, 255, 132, 1)'
+    ];
+
+    const colorPaletteAlpha = colorPalette.map(c => c.replace(', 1)', ', 0.7)'));
+
+    // Load tests on page load
+    async function loadTests() {
+        try {
+            const response = await fetch('/api/analytics/tests');
+            const data = await response.json();
+
+            const select = document.getElementById('test-select');
+            select.innerHTML = '<option value="">Select a test...</option>';
+
+            if (data.tests && data.tests.length > 0) {
+                data.tests.forEach(test => {
+                    const option = document.createElement('option');
+                    option.value = test.id;
+                    option.textContent = `${test.name} (${test.run_count} runs)`;
+                    select.appendChild(option);
+                });
+            }
+        } catch (error) {
+            console.error('Failed to load tests:', error);
+        }
+    }
+
+    // When test selected, load runs and initial data
+    async function onTestSelected(testId) {
+        currentTestId = testId;
+        selectedRunIds = [];
+
+        const runsContainer = document.getElementById('runs-container');
+        const paramSelect = document.getElementById('param-select');
+        const placeholder = document.getElementById('placeholder');
+        const chartsSection = document.getElementById('charts-section');
+        const exportBtn = document.getElementById('export-btn');
+
+        if (!testId) {
+            runsContainer.innerHTML = '<span style="color: #888;">Select a test first</span>';
+            paramSelect.innerHTML = '<option value="">All parameters</option>';
+            placeholder.style.display = 'block';
+            chartsSection.style.display = 'none';
+            exportBtn.disabled = true;
+            destroyAllCharts();
+            return;
+        }
+
+        try {
+            // Fetch initial data to get runs and parameters
+            const response = await fetch(`/api/analytics/data?test_id=${testId}`);
+            const data = await response.json();
+
+            // Populate runs checkboxes
+            if (data.runs && data.runs.length > 0) {
+                runsContainer.innerHTML = `
+                    <label class="run-checkbox">
+                        <input type="checkbox" id="all-runs" checked onchange="toggleAllRuns(this.checked)">
+                        All
+                    </label>
+                `;
+                data.runs.forEach(run => {
+                    const label = document.createElement('label');
+                    label.className = 'run-checkbox';
+                    label.innerHTML = `
+                        <input type="checkbox" class="run-cb" value="${run.id}" checked onchange="onRunToggled()">
+                        Run #${run.id}
+                    `;
+                    runsContainer.appendChild(label);
+                });
+                selectedRunIds = data.runs.map(r => r.id);
+            } else {
+                runsContainer.innerHTML = '<span style="color: #888;">No runs available</span>';
+            }
+
+            // Populate parameters dropdown
+            paramSelect.innerHTML = '<option value="">All parameters</option>';
+            if (data.parameters && data.parameters.length > 0) {
+                data.parameters.forEach(param => {
+                    const option = document.createElement('option');
+                    option.value = param;
+                    option.textContent = param;
+                    paramSelect.appendChild(option);
+                });
+            }
+
+            placeholder.style.display = 'none';
+            chartsSection.style.display = 'grid';
+            exportBtn.disabled = false;
+
+            // Render charts with initial data
+            analyticsData = data;
+            renderAllCharts(data);
+        } catch (error) {
+            console.error('Failed to load test data:', error);
+            runsContainer.innerHTML = '<span style="color: #c00;">Error loading runs</span>';
+        }
+    }
+
+    function toggleAllRuns(checked) {
+        const checkboxes = document.querySelectorAll('.run-cb');
+        checkboxes.forEach(cb => cb.checked = checked);
+        onRunToggled();
+    }
+
+    function onRunToggled() {
+        const checkboxes = document.querySelectorAll('.run-cb');
+        selectedRunIds = Array.from(checkboxes)
+            .filter(cb => cb.checked)
+            .map(cb => parseInt(cb.value));
+
+        // Update "All" checkbox state
+        const allCheckbox = document.getElementById('all-runs');
+        if (allCheckbox) {
+            allCheckbox.checked = selectedRunIds.length === checkboxes.length;
+        }
+
+        refreshCharts();
+    }
+
+    // Fetch data and update all charts
+    async function refreshCharts() {
+        if (!currentTestId) return;
+
+        const startDate = document.getElementById('start-date').value;
+        const endDate = document.getElementById('end-date').value;
+        const paramFilter = document.getElementById('param-select').value;
+
+        const loading = document.getElementById('loading-indicator');
+        loading.classList.add('active');
+
+        try {
+            let url = `/api/analytics/data?test_id=${currentTestId}`;
+            if (selectedRunIds.length > 0) {
+                url += `&run_ids=${selectedRunIds.join(',')}`;
+            }
+            if (startDate) url += `&start_date=${startDate}`;
+            if (endDate) url += `&end_date=${endDate}`;
+            if (paramFilter) url += `&parameter=${encodeURIComponent(paramFilter)}`;
+
+            const response = await fetch(url);
+            const data = await response.json();
+
+            analyticsData = data;
+            renderAllCharts(data);
+        } catch (error) {
+            console.error('Failed to refresh charts:', error);
+        } finally {
+            loading.classList.remove('active');
+        }
+    }
+
+    function destroyAllCharts() {
+        Object.values(chartInstances).forEach(chart => {
+            if (chart) chart.destroy();
+        });
+        chartInstances = {};
+    }
+
+    function renderAllCharts(data) {
+        destroyAllCharts();
+
+        renderDailyPLChart(data);
+        renderCumulativeChart(data);
+        renderStopLossChart(data);
+        renderReasonChart(data);
+        renderVIXChart(data);
+        renderDurationChart(data);
+    }
+
+    // Daily P/L by Parameter - Line chart
+    function renderDailyPLChart(data) {
+        const ctx = document.getElementById('daily-pl-chart').getContext('2d');
+
+        if (!data.daily_pl || Object.keys(data.daily_pl).length === 0) {
+            chartInstances.dailyPL = null;
+            return;
+        }
+
+        const datasets = [];
+        const params = Object.keys(data.daily_pl);
+
+        params.forEach((param, index) => {
+            const paramData = data.daily_pl[param];
+            datasets.push({
+                label: param,
+                data: paramData.map(d => ({ x: d.date, y: d.pl })),
+                borderColor: colorPalette[index % colorPalette.length],
+                backgroundColor: colorPaletteAlpha[index % colorPalette.length],
+                tension: 0.1,
+                fill: false
+            });
+        });
+
+        chartInstances.dailyPL = new Chart(ctx, {
+            type: 'line',
+            data: { datasets },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        type: 'time',
+                        time: { unit: 'day' },
+                        title: { display: true, text: 'Date' }
+                    },
+                    y: {
+                        title: { display: true, text: 'P/L ($)' }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: (context) => `${context.dataset.label}: $${context.parsed.y.toFixed(2)}`
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Cumulative Returns - Line chart
+    function renderCumulativeChart(data) {
+        const ctx = document.getElementById('cumulative-chart').getContext('2d');
+
+        if (!data.cumulative || Object.keys(data.cumulative).length === 0) {
+            chartInstances.cumulative = null;
+            return;
+        }
+
+        const datasets = [];
+        const params = Object.keys(data.cumulative);
+
+        params.forEach((param, index) => {
+            const paramData = data.cumulative[param];
+            datasets.push({
+                label: param,
+                data: paramData.map(d => ({ x: d.date, y: d.cumulative_pl })),
+                borderColor: colorPalette[index % colorPalette.length],
+                backgroundColor: colorPaletteAlpha[index % colorPalette.length],
+                tension: 0.1,
+                fill: false
+            });
+        });
+
+        chartInstances.cumulative = new Chart(ctx, {
+            type: 'line',
+            data: { datasets },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        type: 'time',
+                        time: { unit: 'day' },
+                        title: { display: true, text: 'Date' }
+                    },
+                    y: {
+                        title: { display: true, text: 'Cumulative P/L ($)' }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: (context) => `${context.dataset.label}: $${context.parsed.y.toFixed(2)}`
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Stop Loss Distribution - Bar chart
+    function renderStopLossChart(data) {
+        const ctx = document.getElementById('stop-loss-chart').getContext('2d');
+
+        if (!data.stop_loss_counts || Object.keys(data.stop_loss_counts).length === 0) {
+            chartInstances.stopLoss = null;
+            return;
+        }
+
+        const labels = Object.keys(data.stop_loss_counts);
+        const values = Object.values(data.stop_loss_counts);
+
+        chartInstances.stopLoss = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Stop Loss Count',
+                    data: values,
+                    backgroundColor: colorPaletteAlpha.slice(0, labels.length),
+                    borderColor: colorPalette.slice(0, labels.length),
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        title: { display: true, text: 'Parameter Value' }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        title: { display: true, text: 'Count' }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: (context) => `Stop Losses: ${context.parsed.y}`
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Win/Loss by Reason - Stacked bar chart
+    function renderReasonChart(data) {
+        const ctx = document.getElementById('reason-chart').getContext('2d');
+
+        if (!data.reason_counts || Object.keys(data.reason_counts).length === 0) {
+            chartInstances.reason = null;
+            return;
+        }
+
+        const params = Object.keys(data.reason_counts);
+        const reasonSet = new Set();
+        params.forEach(p => {
+            Object.keys(data.reason_counts[p]).forEach(r => reasonSet.add(r));
+        });
+        const reasons = Array.from(reasonSet);
+
+        const datasets = reasons.map((reason, index) => ({
+            label: reason,
+            data: params.map(p => data.reason_counts[p][reason] || 0),
+            backgroundColor: colorPaletteAlpha[index % colorPalette.length],
+            borderColor: colorPalette[index % colorPalette.length],
+            borderWidth: 1
+        }));
+
+        chartInstances.reason = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: params,
+                datasets: datasets
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        stacked: true,
+                        title: { display: true, text: 'Parameter Value' }
+                    },
+                    y: {
+                        stacked: true,
+                        beginAtZero: true,
+                        title: { display: true, text: 'Trade Count' }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: (context) => `${context.dataset.label}: ${context.parsed.y}`
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // VIX Impact - Scatter plot
+    function renderVIXChart(data) {
+        const ctx = document.getElementById('vix-chart').getContext('2d');
+
+        if (!data.vix_data || data.vix_data.length === 0) {
+            chartInstances.vix = null;
+            return;
+        }
+
+        // Group by parameter
+        const paramGroups = {};
+        data.vix_data.forEach(point => {
+            if (!paramGroups[point.parameter]) {
+                paramGroups[point.parameter] = [];
+            }
+            paramGroups[point.parameter].push({ x: point.opening_vix, y: point.pl });
+        });
+
+        const datasets = Object.keys(paramGroups).map((param, index) => ({
+            label: param,
+            data: paramGroups[param],
+            backgroundColor: colorPaletteAlpha[index % colorPalette.length],
+            borderColor: colorPalette[index % colorPalette.length],
+            pointRadius: 5,
+            pointHoverRadius: 7
+        }));
+
+        chartInstances.vix = new Chart(ctx, {
+            type: 'scatter',
+            data: { datasets },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        title: { display: true, text: 'Opening VIX' }
+                    },
+                    y: {
+                        title: { display: true, text: 'P/L ($)' }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: (context) => `${context.dataset.label}: VIX ${context.parsed.x.toFixed(2)}, P/L $${context.parsed.y.toFixed(2)}`
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Trade Duration - Bar chart
+    function renderDurationChart(data) {
+        const ctx = document.getElementById('duration-chart').getContext('2d');
+
+        if (!data.duration_avg || Object.keys(data.duration_avg).length === 0) {
+            chartInstances.duration = null;
+            return;
+        }
+
+        const labels = Object.keys(data.duration_avg);
+        const values = Object.values(data.duration_avg);
+
+        chartInstances.duration = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Avg Duration (minutes)',
+                    data: values,
+                    backgroundColor: colorPaletteAlpha.slice(0, labels.length),
+                    borderColor: colorPalette.slice(0, labels.length),
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        title: { display: true, text: 'Parameter Value' }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        title: { display: true, text: 'Average Minutes' }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: (context) => `Avg Duration: ${context.parsed.y.toFixed(1)} min`
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Export data as CSV
+    function exportData() {
+        if (!analyticsData || !analyticsData.trades || analyticsData.trades.length === 0) {
+            alert('No data to export');
+            return;
+        }
+
+        const trades = analyticsData.trades;
+        const headers = Object.keys(trades[0]);
+        const csvRows = [headers.join(',')];
+
+        trades.forEach(trade => {
+            const values = headers.map(h => {
+                const val = trade[h];
+                // Escape commas and quotes in string values
+                if (typeof val === 'string' && (val.includes(',') || val.includes('"'))) {
+                    return `"${val.replace(/"/g, '""')}"`;
+                }
+                return val;
+            });
+            csvRows.push(values.join(','));
+        });
+
+        const csvContent = csvRows.join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', `analytics_export_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    }
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', loadTests);
+</script>
+
+<!-- Chart.js date adapter for time series -->
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0"></script>
 {% endblock %}
